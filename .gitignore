@@ -28,3 +28,12 @@
 *.app
 
 evaluate.pm
+evaluate-wrap.cpp
+generate-map.from-fastq.single.common
+reconstruct-genome.rna
+remove-postfix.fasta.single.common
+write-order-file.from-fastq.to-fastq.paired.common
+write-order-file.from-fastq.to-fastq.single.common
+write-order-file.from-fastq.to-fasta.paired.common
+write-order-file.from-fastq.to-fasta.single.common
+write-order-file.sam.paired.common
