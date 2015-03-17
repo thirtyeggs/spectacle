@@ -357,6 +357,12 @@ sub convert_bam_to_location {
          my $cigar_str1 = $each_alignment1->cigar_str;
          my $cigar_str2 = $each_alignment2->cigar_str;
 
+         # substitute soft clippings with insertions
+         $cigar_str1 =~ s/^(\d+)S/$1I/;
+         $cigar_str1 =~ s/(\d+)S$/$1I/;
+         $cigar_str2 =~ s/^(\d+)S/$1I/;
+         $cigar_str2 =~ s/(\d+)S$/$1I/;
+
          my $read1_tmp = $each_alignment1->query->dna;
          my $read2_tmp = $each_alignment2->query->dna;
          if (($cigar_str1 !~ /[SHP=X]/) && ($cigar_str2 !~ /[SHP=X]/) && ($read1_tmp !~ /N/) && ($read2_tmp !~ /N/)) {
