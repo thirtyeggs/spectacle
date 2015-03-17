@@ -263,6 +263,10 @@ sub convert_bam_to_location {
          # no unsupported character
          my $cigar_str = $each_alignment->cigar_str;
 
+         # substitute soft clippings with insertions
+         $cigar_str =~ s/^(\d+)S/$1I/;
+         $cigar_str =~ s/(\d+)S$/$1I/;
+
          my $read_tmp = $each_alignment->query->dna;
          if (($cigar_str !~ /[SHP=X]/) && ($read_tmp !~ /N/)) {
             #--------------------------------------------------
