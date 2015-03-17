@@ -254,23 +254,23 @@ sub calculate_similarity {
    # it does not report the number of reads
    # because a read can be split into smaller ones by an error correction tool
    print "\n";
-   printf "Total number of bases in a read file (A): %12d\n", $num_total_bases_read;
-   printf "Total number of matched bases        (B): %12d\n", $num_matched_bases;
-   printf "Total number of not matched bases    (C): %12d\n", $num_not_matched_bases;
-   printf "Total number of inserted bases       (D): %12d\n", $num_inserted_bases;
-   printf "Total number of deleted bases        (E): %12d\n", $num_deleted_bases;
+   printf "Total number of bases in a read file (A)           : %12d\n", $num_total_bases_read;
+   printf "Total number of matched bases (B)                  : %12d\n", $num_matched_bases;
+   printf "Total number of not matched bases (C)              : %12d\n", $num_not_matched_bases;
+   printf "Total number of inserted bases (D)                 : %12d\n", $num_inserted_bases;
+   printf "Total number of deleted bases (E)                  : %12d\n", $num_deleted_bases;
 
    if ($num_total_bases_read == 0) {
-      printf "Percentage of exactly aligned bases (100 X B / A): %12s\n", "N/A (No base in the read file)";
+      printf "Percentage of aligned bases (100 X (B + C + D) / A): %12s\n", "N/A (No base in the read file)";
    }
    else {
-      printf "Percentage of exactly aligned bases (100 X B / A): %12.1f (%%)\n", 100.0 * $num_matched_bases / $num_total_bases_read;
+      printf "Percentage of aligned bases (100 X (B + C + D) / A): %12.1f (%%)\n", 100.0 * $num_matched_bases / $num_total_bases_read;
    }
 
    if (($num_matched_bases + $num_not_matched_bases + $num_inserted_bases + $num_deleted_bases) == 0) {
-      printf "Percent similarity (100 X B / (B + C + D + E)): %12s\n", "N/A (No aligned base)";
+      printf "Percent similarity (100 X B / (B + C + D + E))     : %12s\n", "N/A (No aligned base)";
    }
    else {
-      printf "Percent similarity (100 X B / (B + C + D + E)): %12.1f (%%)\n", 100.0 * $num_matched_bases / ($num_matched_bases + $num_not_matched_bases + $num_inserted_bases + $num_deleted_bases);
+      printf "Percent similarity (100 X B / (B + C + D + E))     : %12.1f (%%)\n", 100.0 * $num_matched_bases / ($num_matched_bases + $num_not_matched_bases + $num_inserted_bases + $num_deleted_bases);
    }
 }
