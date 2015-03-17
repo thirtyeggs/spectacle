@@ -26,17 +26,19 @@ use version;
 # turn on auto flush
 $| = 1;
 
-my $program_name         = basename $0;
-my $date                 = $version::date;
-my $version              = $version::version;
-my $flag_not_primary     = 0x0100;
-my $flag_first_read      = 0x0040;
-my $flag_second_read     = 0x0080;
-my $num_total_bases_bam  = 0;
-my $num_matched_bases    = 0;
-my $num_total_bases_read = 0;
-my $num_reads_bam        = 0;
-my $num_reads_read       = 0;
+my $program_name          = basename $0;
+my $date                  = $version::date;
+my $version               = $version::version;
+my $flag_not_primary      = 0x0100;
+my $flag_first_read       = 0x0040;
+my $flag_second_read      = 0x0080;
+my $num_matched_bases     = 0;
+my $num_not_matched_bases = 0;
+my $num_inserted_bases    = 0;
+my $num_deleted_bases     = 0;
+my $num_total_bases_read  = 0;
+my $num_reads_bam         = 0;
+my $num_reads_read        = 0;
 
 my $in_bam_file;
 my $in_fasta_file;
@@ -208,13 +210,41 @@ sub calculate_similarity {
          $base1 = substr($align1, $it_base, 1);
          $base2 = substr($align2, $it_base, 1);
 
-
-         if (($base1 ne "-") && ($base1 eq $base2)) {
-            $num_matched_bases++;
+         # ACGT in $base1
+         if ($base1 ne "-") {
+            if ($base2 ne "-") {
+               # A
+               # A
+               if ($base1 eq $base2) {
+                  $num_matched_bases++;
+               }
+               # A
+               # T
+               else {
+                  $num_not_matched_bases++;
+               }
+            }
+            # A
+            # -
+            else {
+               $num_deleted_bases++;
+            }
+         }
+         # "-" in $base1
+         else {
+            # -
+            # A
+            if ($base2 ne "-") {
+               $num_inserted_bases++;
+            }
+            # -
+            # -
+            else {
+               die "\nERRROR: $align1 vs $align2\n\n";
+            }
          }
       }
 
-      $num_total_bases_bam += length($align1);
       $num_reads_bam++;
    }
 
@@ -224,21 +254,23 @@ sub calculate_similarity {
    # it does not report the number of reads
    # because a read can be split into smaller ones by an error correction tool
    print "\n";
-   printf "Total number of bases in a read file (A)   : %12d\n", $num_total_bases_read;
-   printf "Total number of aligned bases with gaps (B): %12d\n", $num_total_bases_bam;
-   printf "Total number of matched bases (C)          : %12d\n", $num_matched_bases;
+   printf "Total number of bases in a read file (A): %12d\n", $num_total_bases_read;
+   printf "Total number of matched bases        (B): %12d\n", $num_matched_bases;
+   printf "Total number of not matched bases    (C): %12d\n", $num_not_matched_bases;
+   printf "Total number of inserted bases       (D): %12d\n", $num_inserted_bases;
+   printf "Total number of deleted bases        (E): %12d\n", $num_deleted_bases;
 
    if ($num_total_bases_read == 0) {
-      printf "Percentage of aligned bases (100 X B / A)  : %12s\n", "N/A (No base in the read file)";
+      printf "Percentage of exactly aligned bases (100 X B / A): %12s\n", "N/A (No base in the read file)";
    }
    else {
-      printf "Percentage of aligned bases (100 X B / A)  : %12.1f (%%)\n", 100.0 * $num_total_bases_bam / $num_total_bases_read;
+      printf "Percentage of exactly aligned bases (100 X B / A): %12.1f (%%)\n", 100.0 * $num_matched_bases / $num_total_bases_read;
    }
 
-   if ($num_total_bases_bam == 0) {
-      printf "Percent similarity (100 X C / B)           : %12s\n", "N/A (No aligned base)";
+   if (($num_matched_bases + $num_not_matched_bases + $num_inserted_bases + $num_deleted_bases) == 0) {
+      printf "Percent similarity (100 X B / (B + C + D + E)): %12s\n", "N/A (No aligned base)";
    }
    else {
-      printf "Percent similarity (100 X C / B)           : %12.1f (%%)\n", 100.0 * $num_matched_bases / $num_total_bases_bam;
+      printf "Percent similarity (100 X B / (B + C + D + E)): %12.1f (%%)\n", 100.0 * $num_matched_bases / ($num_matched_bases + $num_not_matched_bases + $num_inserted_bases + $num_deleted_bases);
    }
 }
