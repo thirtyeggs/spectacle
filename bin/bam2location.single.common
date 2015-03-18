@@ -45,6 +45,7 @@ my $in_bam_file;
 my $in_prefix;
 my $in_fastq;
 my $in_tmp_dir;
+my $in_pacbio;
 
 my $out_order_file;
 my $out_sorted_order_file;
@@ -78,6 +79,7 @@ ARGUMENT          DESCRIPTION                   MANDATORY      DEFAULT
 ----------------------------------------------------------------------
 -h                print help                    N
 -bam    <file>    input bam file                Y
+-pacbio           soft clipping -> insertions   N
 -prefix <string>  output file prefix            Y
 -q      <file>    input fastq file              Y
 -tmp    <dir>     tmp directory for sorting     N
@@ -134,6 +136,7 @@ sub parse_arguments {
    if (!GetOptions (
                     "h"        => \$help,
                     "bam=s"    => \$in_bam_file,
+                    "pacbio"   => \$in_pacbio,
                     "prefix=s" => \$in_prefix,
                     "q=s"      => \$in_fastq,
                     "tmp=s"    => \$in_tmp_dir,
@@ -264,8 +267,10 @@ sub convert_bam_to_location {
          my $cigar_str = $each_alignment->cigar_str;
 
          # substitute soft clippings with insertions
-         $cigar_str =~ s/^(\d+)S/$1I/;
-         $cigar_str =~ s/(\d+)S$/$1I/;
+         if ($in_pacbio) {
+            $cigar_str =~ s/^(\d+)S/$1I/;
+            $cigar_str =~ s/(\d+)S$/$1I/;
+         }
 
          my $read_tmp = $each_alignment->query->dna;
          if (($cigar_str !~ /[SHP=X]/) && ($read_tmp !~ /N/)) {
