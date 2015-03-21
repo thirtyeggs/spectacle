@@ -45,7 +45,7 @@ my $in_prefix;
 my $in_fastq1;
 my $in_fastq2;
 my $in_tmp_dir;
-my $in_pacbio;
+my $in_softclip;
 
 my $out_order_file;
 my $out_sorted_order_file;
@@ -85,7 +85,7 @@ ARGUMENT          DESCRIPTION                   MANDATORY      DEFAULT
 ----------------------------------------------------------------------
 -h                print help                    N
 -bam    <file>    input bam file                Y
--pacbio           soft clipping -> insertions   N
+-softclip         soft clipping -> insertions   N
 -prefix <string>  output file prefix            Y
 -q1     <file>    input forward fastq file      Y
 -q2     <file>    input reverse fastq file      Y
@@ -143,7 +143,7 @@ sub parse_arguments {
    if (!GetOptions (
                     "h"        => \$help,
                     "bam=s"    => \$in_bam_file,
-                    "pacbio"   => \$in_pacbio,
+                    "softclip" => \$in_softclip,
                     "prefix=s" => \$in_prefix,
                     "q1=s"     => \$in_fastq1,
                     "q2=s"     => \$in_fastq2,
@@ -377,7 +377,7 @@ sub convert_bam_to_location {
          $total_num_deletions_merged += $buffer;
 
          # substitute soft clippings with insertions
-         if ($in_pacbio) {
+         if ($in_softclip) {
             $cigar_str1 =~ s/^(\d+)S/$1I/;
             $cigar_str1 =~ s/(\d+)S$/$1I/;
             $cigar_str2 =~ s/^(\d+)S/$1I/;
