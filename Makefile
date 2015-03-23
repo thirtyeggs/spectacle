@@ -85,6 +85,7 @@ evaluate: $(SRC_DIR)/evaluate.o $(SRC_DIR)/evaluate-wrap.o
 	chmod 644 $(LIB_DIR)/evaluate.so
 
 clean:
+	rm -f $(BIN_DIR)/generate-map.from-fasta.single.common
 	rm -f $(BIN_DIR)/generate-map.from-fastq.single.common
 	rm -f $(BIN_DIR)/reconstruct-genome.rna
 	rm -f $(BIN_DIR)/remove-postfix.fasta.single.common
