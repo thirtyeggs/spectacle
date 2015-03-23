@@ -149,7 +149,7 @@ ARGUMENT             DESCRIPTION                   MANDATORY   DEFAULT
 -orgfastq  <file>    original single fastq file    N
 -orgfastq1 <file>    original forward fastq file   N
 -orgfastq2 <file>    original reverse fastq file   N
--pacbio              pacbio reads                  N
+-smrt                SMRT reads                    N
 -ref       <file>    error-free single fasta file  N
 -ref1      <file>    error-free forward fasta file N
 -ref2      <file>    error-free reverse fasta file N

@@ -222,7 +222,7 @@ ARGUMENT             DESCRIPTION                   MANDATORY   DEFAULT
 -orgfastq1 <file>    original forward fastq file   N
 -orgfastq2 <file>    original reverse fastq file   N
 -outer     <number>  extra reference base length   N $outer_length_default_illumina (Pacbio: $outer_length_default_pacbio)
--pacbio              pacbio reads                  N
+-smrt                SMRT reads                    N
 -ref1      <file>    1st reference fasta file      Y
 -ref2      <file>    2nd reference fasta file      N
 -samtools  <file>    samtools binary               N
@@ -990,7 +990,7 @@ sub parse_args {
       }
 
       unless ($in_pacbio) {
-         die "\nERROR: -map should always be used with -pacbio\n\n";
+         die "\nERROR: -map should always be used with -smrt\n\n";
       }
    }
 
