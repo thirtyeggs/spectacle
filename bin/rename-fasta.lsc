@@ -96,7 +96,7 @@ sub parse_arguments {
 
    if (!GetOptions (
                     "h"           => \$help,
-                    "orgfastq=s" => \$in_org_fastq,
+                    "orgfastq=s"  => \$in_org_fastq,
                     "infasta=s"   => \$in_fasta,
                     "outfasta=s"  => \$out_fasta,
                    )

@@ -60,7 +60,7 @@ ARGUMENT          DESCRIPTION                   MANDATORY      DEFAULT
 -h                print help                    N
 -bam    <file>    input bam file                Y
 -fasta  <file>    input fasta file              N
--fastq  <file>    input fasta file              N
+-fastq  <file>    input fastq file              N
 ----------------------------------------------------------------------
 \n";
 
