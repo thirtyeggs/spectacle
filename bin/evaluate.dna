@@ -207,14 +207,14 @@ ARGUMENT             DESCRIPTION                   MANDATORY   DEFAULT
 -debug     <prefix>  write evaluation detail       N
 -detail    <prefix>  perform the detailed analysis N
 -endgap              penalize end gaps             N
--gext      <number>  gap extension penalty         N   $gap_extension_penalty_default (PacBio: $gap_extension_penalty_pacbio)
--gopen     <number>  gap opening penalty           N   $gap_opening_penalty_default (PacBio: $gap_opening_penalty_pacbio)
+-gext      <number>  gap extension penalty         N   $gap_extension_penalty_default (SMRT: $gap_extension_penalty_pacbio)
+-gopen     <number>  gap opening penalty           N   $gap_opening_penalty_default (SMRT: $gap_opening_penalty_pacbio)
 -h                   print help                    N
 -location  <file>    error location file           Y
 -map       <file>    read map file                 N
--match     <number>  match gain                    N    $match_gain_default (PacBio:  $match_gain_pacbio)
+-match     <number>  match gain                    N    $match_gain_default (SMRT:  $match_gain_pacbio)
 -maxdepth  <number>  max depth for reporting       N                $max_array_size
--mmatch    <number>  mismatch penalty              N   $mismatch_penalty_default (PacBio: $mismatch_penalty_pacbio)
+-mmatch    <number>  mismatch penalty              N   $mismatch_penalty_default (SMRT: $mismatch_penalty_pacbio)
 -orgfasta  <file>    single original fasta file    N
 -orgfasta1 <file>    original forward fasta file   N
 -orgfasta2 <file>    original reverse fasta file   N
