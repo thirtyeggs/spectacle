@@ -81,9 +81,9 @@ ARGUMENT          DESCRIPTION                   MANDATORY      DEFAULT
 ----------------------------------------------------------------------
 -h                print help                    N
 -bam    <file>    input bam file                Y
--softclip         soft clipping -> insertions   N
 -prefix <string>  output file prefix            Y
 -q      <file>    input fastq file              Y
+-softclip         soft clipping -> insertions   N
 -tmp    <dir>     tmp directory for sorting     N
 ----------------------------------------------------------------------
 \n";
