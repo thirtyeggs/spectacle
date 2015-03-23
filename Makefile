@@ -88,7 +88,8 @@ clean:
 	rm -f $(BIN_DIR)/generate-map.from-fasta.single.common
 	rm -f $(BIN_DIR)/generate-map.from-fastq.single.common
 	rm -f $(BIN_DIR)/reconstruct-genome.rna
-	rm -f $(BIN_DIR)/remove-postfix.fasta.single.common
+	rm -f $(BIN_DIR)/remove-postfix.fasta.single.lordec
+	rm -f $(BIN_DIR)/remove-postfix.fasta.single.lsc
 	rm -f $(BIN_DIR)/write-order-file.from-fastq.to-fastq.paired.common
 	rm -f $(BIN_DIR)/write-order-file.from-fastq.to-fastq.single.common
 	rm -f $(BIN_DIR)/write-order-file.from-fastq.to-fasta.paired.common
