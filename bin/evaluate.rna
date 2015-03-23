@@ -137,12 +137,12 @@ ARGUMENT             DESCRIPTION                   MANDATORY   DEFAULT
 -corfastq2 <file>    corrected reverse fastq file  N
 -debug     <prefix>  write evaluation detail       N
 -endgap              penalize end gaps             N
--gext      <number>  gap extension penalty         N   $gap_extension_penalty_default (SMRT: $gap_extension_penalty_pacbio)
--gopen     <number>  gap opening penalty           N   $gap_opening_penalty_default (SMRT: $gap_opening_penalty_pacbio)
+-gext      <number>  gap extension penalty         N     $gap_extension_penalty_default (SMRT: $gap_extension_penalty_pacbio)
+-gopen     <number>  gap opening penalty           N     $gap_opening_penalty_default (SMRT: $gap_opening_penalty_pacbio)
 -h                   print help                    N
 -location  <file>    error location file           Y
--match     <number>  match gain                    N    $match_gain_default (SMRT:  $match_gain_pacbio)
--mmatch    <number>  mismatch penalty              N   $mismatch_penalty_default (SMRT: $mismatch_penalty_pacbio)
+-match     <number>  match gain                    N      $match_gain_default (SMRT:  $match_gain_pacbio)
+-mmatch    <number>  mismatch penalty              N     $mismatch_penalty_default (SMRT: $mismatch_penalty_pacbio)
 -orgfasta  <file>    single original fasta file    N
 -orgfasta1 <file>    original forward fasta file   N
 -orgfasta2 <file>    original reverse fasta file   N
