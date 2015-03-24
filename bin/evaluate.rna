@@ -137,19 +137,19 @@ ARGUMENT             DESCRIPTION                   MANDATORY   DEFAULT
 -corfastq2 <file>    corrected reverse fastq file  N
 -debug     <prefix>  write evaluation detail       N
 -endgap              penalize end gaps             N
--gext      <number>  gap extension penalty         N     $gap_extension_penalty_default (SMRT: $gap_extension_penalty_pacbio)
--gopen     <number>  gap opening penalty           N     $gap_opening_penalty_default (SMRT: $gap_opening_penalty_pacbio)
+-gext      <number>  gap extension penalty         N   $gap_extension_penalty_default (PacBio: $gap_extension_penalty_pacbio)
+-gopen     <number>  gap opening penalty           N   $gap_opening_penalty_default (PacBio: $gap_opening_penalty_pacbio)
 -h                   print help                    N
 -location  <file>    error location file           Y
--match     <number>  match gain                    N      $match_gain_default (SMRT:  $match_gain_pacbio)
--mmatch    <number>  mismatch penalty              N     $mismatch_penalty_default (SMRT: $mismatch_penalty_pacbio)
+-match     <number>  match gain                    N    $match_gain_default (PacBio:  $match_gain_pacbio)
+-mmatch    <number>  mismatch penalty              N   $mismatch_penalty_default (PacBio: $mismatch_penalty_pacbio)
 -orgfasta  <file>    single original fasta file    N
 -orgfasta1 <file>    original forward fasta file   N
 -orgfasta2 <file>    original reverse fasta file   N
 -orgfastq  <file>    original single fastq file    N
 -orgfastq1 <file>    original forward fastq file   N
 -orgfastq2 <file>    original reverse fastq file   N
--smrt                SMRT reads                    N
+-pacbio              PacBio reads                  N
 -ref       <file>    error-free single fasta file  N
 -ref1      <file>    error-free forward fasta file N
 -ref2      <file>    error-free reverse fasta file N
