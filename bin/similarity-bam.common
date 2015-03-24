@@ -34,8 +34,9 @@ my $num_not_matched_bases = 0;
 my $num_inserted_bases    = 0;
 my $num_deleted_bases     = 0;
 my $num_total_bases_read  = 0;
-my $num_reads_bam         = 0;
-my $num_reads_read        = 0;
+my $num_reads_in_bam      = 0;
+my $num_reads_in_read     = 0;
+my $num_exact_reads       = 0;
 
 my $in_bam_file;
 my $in_fasta_file;
@@ -175,7 +176,7 @@ sub parse_read_file {
          $line = <$fh_read>;
       }
 
-      $num_reads_read++;
+      $num_reads_in_read++;
    }
 
    close $fh_read;
@@ -203,6 +204,8 @@ sub calculate_similarity {
    while (my $each_alignment = $bam_iterator->next_seq) {
       ($align1, $tmp, $align2) = $each_alignment->padded_alignment;
 
+      my $flag_mismatch = 0;
+
       for ($it_base = 0; $it_base < length($align1); $it_base++) {
          $base1 = substr($align1, $it_base, 1);
          $base2 = substr($align2, $it_base, 1);
@@ -219,12 +222,14 @@ sub calculate_similarity {
                # T
                else {
                   $num_not_matched_bases++;
+                  $flag_mismatch = 1;
                }
             }
             # A
             # -
             else {
                $num_deleted_bases++;
+               $flag_mismatch = 1;
             }
          }
          # "-" in $base1
@@ -239,10 +244,17 @@ sub calculate_similarity {
             else {
                die "\nERRROR: $align1 vs $align2\n\n";
             }
+
+            $flag_mismatch = 1;
          }
       }
 
-      $num_reads_bam++;
+      $num_reads_in_bam++;
+
+      # exactly matched read
+      if ($flag_mismatch == 0) {
+         $num_exact_reads++;
+      }
    }
 
    print "     Calculating percentage similarity: done\n";
@@ -256,6 +268,9 @@ sub calculate_similarity {
    printf "Total number of not matched bases (C)              : %12d\n", $num_not_matched_bases;
    printf "Total number of inserted bases (D)                 : %12d\n", $num_inserted_bases;
    printf "Total number of deleted bases (E)                  : %12d\n", $num_deleted_bases;
+   printf "Total number of reads (F)                          : %12d\n", $num_reads_in_read;
+   printf "Total number of aligned reads (G)                  : %12d\n", $num_reads_in_bam;
+   printf "Total number of exactly aligned reads (H)          : %12d\n", $num_exact_reads;
 
    if ($num_total_bases_read == 0) {
       printf "Percentage of aligned bases (100 X (B + C + D) / A): %12s\n", "N/A (No base in the read file)";
@@ -269,5 +284,14 @@ sub calculate_similarity {
    }
    else {
       printf "Percent similarity (100 X B / (B + C + D + E))     : %12.1f (%%)\n", 100.0 * $num_matched_bases / ($num_matched_bases + $num_not_matched_bases + $num_inserted_bases + $num_deleted_bases);
+   }
+
+   if ($num_reads_in_read == 0) {
+      printf "Percentage of aligned reads (100 X G / F)          : %12s\n", "N/A (No aligned base)";
+      printf "Percentage of exactly aligned reads (100 X H / F)  : %12s\n", "N/A (No aligned base)";
+   }
+   else {
+      printf "Percentage of aligned reads (100 X G / F)          : %12.1f (%%)\n", 100.0 * $num_reads_in_bam / $num_reads_in_read;
+      printf "Percentage of exactly aligned reads (100 X H / F)  : %12.1f (%%)\n", 100.0 * $num_exact_reads / $num_reads_in_read;
    }
 }
