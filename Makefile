@@ -1,7 +1,3 @@
-#----------------------------------------------------------------------
-SWIG_DIR=/home/yunheo1/tool/swig/v3p0p5/install/bin
-#----------------------------------------------------------------------
-
 CC=g++
 CFLAGS=-Wall -O3 -std=c++11
 SRC_DIR=src
@@ -77,7 +73,7 @@ $(SRC_DIR)/evaluate-wrap.o: swig
 	$(CC) -O3 -std=c++11 -c `perl -MConfig -e 'print join(" ", @Config{qw(ccflags optimize cccdlflags)}, "-I$$Config{archlib}/CORE")'` -o $@ $(SRC_DIR)/evaluate-wrap.cpp
 
 swig:
-	$(SWIG_DIR)/swig -perl5 -c++ -o $(SRC_DIR)/evaluate-wrap.cpp $(LIB_DIR)/evaluate.i
+	swig -perl5 -c++ -o $(SRC_DIR)/evaluate-wrap.cpp $(LIB_DIR)/evaluate.i
 	mv $(SRC_DIR)/evaluate.pm $(LIB_DIR)
 
 evaluate: $(SRC_DIR)/evaluate.o $(SRC_DIR)/evaluate-wrap.o
