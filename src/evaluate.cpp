@@ -314,12 +314,12 @@ void fill_matrixes() {
    //
    // gap 1
    //
-   // first row
+   // first row (including origin)
    for(int it_x = 0; it_x < matrix_width; it_x++) {
       gap_1_matrix[it_x] = SMALL_NUMBER;
    }
 
-   // first column
+   // first column (excluding origin)
    for(int it_y = 1; it_y < matrix_height; it_y++) {
       if (no_end_gap_penalty) {
          gap_1_matrix[matrix_width * it_y] = 0;
@@ -332,7 +332,7 @@ void fill_matrixes() {
    //
    // gap 2
    //
-   // first row
+   // first row (excluding origin)
    for(int it_x = 1; it_x < matrix_width; it_x++) {
       if (no_end_gap_penalty) {
          gap_2_matrix[it_x] = 0;
@@ -342,7 +342,7 @@ void fill_matrixes() {
       }
    }
 
-   // first column
+   // first column (including origin)
    for(int it_y = 0; it_y < matrix_height; it_y++) {
       gap_2_matrix[matrix_width * it_y] = SMALL_NUMBER;
    }
