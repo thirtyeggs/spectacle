@@ -2333,7 +2333,7 @@ void calculate_percent_similarity() {
    // no alignment is made
    // because there are too few overlaps between them
    if (alignment1_vector.size() == 0) {
-      num_total_bases_percent_similarity   = read_length;
+      num_total_bases_percent_similarity   = 0;
       num_matched_bases_percent_similarity = 0;
 
       alignment_best = "NO ALIGNMENT\n";
