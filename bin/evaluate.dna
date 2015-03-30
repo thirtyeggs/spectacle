@@ -3220,7 +3220,7 @@ sub compare_reads {
 
             print "\n\n";
             print "     ---------------------------------------------------------\n";
-            print "     3. (# of Correct Bases) - (# of Erroneous Bases)\n";
+            print "     3. Differential Supporting Read Coverage\n";
             print "     ---------------------------------------------------------\n";
             print "          Difference   Corrected bases\n";
             print "          ----------   ---------------------------------------\n";
@@ -3271,7 +3271,7 @@ sub compare_reads {
 
             print "\n\n";
             print "     ---------------------------------------------------------\n";
-            print "     4. # of Correct Bases\n";
+            print "     4. Supporting Read Coverage of Correct Bases\n";
             print "     ---------------------------------------------------------\n";
             print "          Coverage     Corrected bases\n";
             print "          ----------   ---------------------------------------\n";
