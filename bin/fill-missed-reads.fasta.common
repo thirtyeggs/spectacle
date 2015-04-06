@@ -173,16 +173,14 @@ sub MergeFiles {
                die "\nERROR $line_cor\n";
             }
          }
+         # end of the corrected read file
          else {
-            $read_name_cor = "NOT-DEFINED";
+            $read_name_cor = "";
          }
 
          $line_org = <$fh_org>;
          $line_org = <$fh_org>;
          $line_org = <$fh_org>;
-      }
-      elsif ($read_name_cor eq "NOT-DEFINED") {
-         die "\nERROR: Number of lines in reads are mismatched\n\n";
       }
       # not find the same read
       # write the org read
