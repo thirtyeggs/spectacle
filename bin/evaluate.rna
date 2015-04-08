@@ -748,48 +748,52 @@ sub parse_args {
    $hash_complement{"T"} = "A";
 
    if ($rank == 0) {
-      print "     Code                : $full_name\n";
-      print "     Number of processors: $num_procs\n";
+      print "     Code                 : $full_name\n";
+      print "     Number of processors : $num_procs\n";
 
       if (defined($in_org_fastq_file)) {
-         print "     Original read       : $in_org_fastq_file\n";
+         print "     Original read        : $in_org_fastq_file\n";
       }
       elsif (defined($in_org_fasta_file)) {
-         print "     Original read       : $in_org_fasta_file\n";
+         print "     Original read        : $in_org_fasta_file\n";
       }
       elsif (defined($in_org_fastq1_file)) {
-         print "     Original read 1st   : $in_org_fastq1_file\n";
-         print "     Original read 2nd   : $in_org_fastq2_file\n";
+         print "     Original read 1st    : $in_org_fastq1_file\n";
+         print "     Original read 2nd    : $in_org_fastq2_file\n";
       }
       else {
-         print "     Original read 1st   : $in_org_fasta1_file\n";
-         print "     Original read 2nd   : $in_org_fasta2_file\n";
+         print "     Original read 1st    : $in_org_fasta1_file\n";
+         print "     Original read 2nd    : $in_org_fasta2_file\n";
       }
 
       if (defined($in_cor_fastq_file)) {
-         print "     Corrected read      : $in_cor_fastq_file\n";
+         print "     Corrected read       : $in_cor_fastq_file\n";
       }
       elsif (defined($in_cor_fasta_file)) {
-         print "     Corrected read      : $in_cor_fasta_file\n";
+         print "     Corrected read       : $in_cor_fasta_file\n";
       }
       elsif (defined($in_cor_fastq1_file)) {
-         print "     Corrected read 1st  : $in_cor_fastq1_file\n";
-         print "     Corrected read 2nd  : $in_cor_fastq2_file\n";
+         print "     Corrected read 1st   : $in_cor_fastq1_file\n";
+         print "     Corrected read 2nd   : $in_cor_fastq2_file\n";
       }
       else {
-         print "     Corrected read 1st  : $in_cor_fasta1_file\n";
-         print "     Corrected read 2nd  : $in_cor_fasta2_file\n";
+         print "     Corrected read 1st   : $in_cor_fasta1_file\n";
+         print "     Corrected read 2nd   : $in_cor_fasta2_file\n";
       }
 
       if (defined($in_error_free_fasta_file)) {
-         print "     Error-free read     : $in_error_free_fasta_file\n";
+         print "     Error-free read      : $in_error_free_fasta_file\n";
       }
       else {
-         print "     Error-free read 1st : $in_error_free_fasta1_file\n";
-         print "     Error-free read 2nd : $in_error_free_fasta2_file\n";
+         print "     Error-free read 1st  : $in_error_free_fasta1_file\n";
+         print "     Error-free read 2nd  : $in_error_free_fasta2_file\n";
       }
 
-      print "     Location file       : $in_location_file\n";
+      print "     Location file        : $in_location_file\n";
+      print "     Match gain           : $in_match_gain\n";
+      print "     Mismatatch penalty   : $in_mismatch_penalty\n";
+      print "     Gap opening penalty  : $in_gap_opening_penalty\n";
+      print "     Gap extension penalty: $in_gap_extension_penalty\n";
 
       print "     Parsing argumetns: done\n";
    }
