@@ -416,11 +416,11 @@ sub convert_bam_to_location {
    close FH_FASTA2;
 
    # total number of errors
-   printf "     Total number of substitusions         : %11d\n", $total_num_substitutions;
-   printf "     Total number of insersions            : %11d\n", $total_num_insertions_merged;
-   printf "     Total number of delesions             : %11d\n", $total_num_deletions_merged;
-   printf "     Total number of insersions (separated): %11d\n", $total_num_insertions;
-   printf "     Total number of delesions (separated) : %11d\n", $total_num_deletions;
+   printf "     Total number of substitutions         : %11d\n", $total_num_substitutions;
+   printf "     Total number of insertions            : %11d\n", $total_num_insertions_merged;
+   printf "     Total number of deletions             : %11d\n", $total_num_deletions_merged;
+   printf "     Total number of insertions (separated): %11d\n", $total_num_insertions;
+   printf "     Total number of deletions (separated) : %11d\n", $total_num_deletions;
 
    print "     Converting bam to location: done\n\n";
 }
