@@ -1052,6 +1052,10 @@ sub parse_args {
 
       print "     Location file           : $in_location_file\n";
       print "     Max parallel read length: $read_length_parallel\n";
+      print "     Match gain              : $in_match_gain\n";
+      print "     Mismatatch penalty      : $in_mismatch_penalty\n";
+      print "     Gap opening penalty     : $in_gap_opening_penalty\n";
+      print "     Gap extension penalty   : $in_gap_extension_penalty\n";
 
       if ($in_similarity == 1) {
          print "     Evaluation method       : Percent similarity\n";
@@ -1289,7 +1293,7 @@ sub compare_reads {
             $occurrence_map = $2;
          }
          else {
-            die "\nERROR: Wrong PBcR map line $line_map\n";
+            die "\nERROR: Wrong map line $line_map\n";
          }
       }
       # if a map file is not used
