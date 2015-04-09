@@ -989,8 +989,8 @@ sub parse_args {
          die "\nERROR: $in_map_file does not exist\n\n";
       }
 
-      unless ($in_pacbio) {
-         die "\nERROR: -map should always be used with -pacbio\n\n";
+      unless ($in_similarity) {
+         die "\nERROR: -map should always be used with -similarity\n\n";
       }
    }
 
