@@ -265,6 +265,7 @@ sub convert_bam_to_location {
          #--------------------------------------------------
          # check flags
          #--------------------------------------------------
+         # "XN" is set when there are ambiguous bases in the reference
          my $flag1        = $each_alignment1->flag;
          my $flag2        = $each_alignment2->flag;
          my $read_name1   = $each_alignment1->qname;
@@ -275,6 +276,8 @@ sub convert_bam_to_location {
          my $ref_name2    = $each_alignment2->seq_id;
          my $strand1      = $each_alignment1->strand;
          my $strand2      = $each_alignment2->strand;
+         my $xn1          = $each_alignment1->aux_get("XN");
+         my $xn2          = $each_alignment2->aux_get("XN");
          my $read_length1 = length($each_alignment1->query->dna);
          my $read_length2 = length($each_alignment2->query->dna);
 
@@ -326,6 +329,7 @@ sub convert_bam_to_location {
          my $final_start_index2;
 
          # or use $each_alignment*->get_tag_values('FIRST_MATE')
+         # $xn1 and $xn2 doesn't need to be swapped
          if (($flag1 & $flag_first_read) == $flag_first_read) {
             # or use $each_alignment*->get_tag_values('SECOND_MATE')
             if (($flag2 & $flag_second_read) == $flag_second_read) {
@@ -387,26 +391,28 @@ sub convert_bam_to_location {
          my $read1_tmp = $each_alignment1->query->dna;
          my $read2_tmp = $each_alignment2->query->dna;
          if (($cigar_str1 !~ /[SHP=X]/) && ($cigar_str2 !~ /[SHP=X]/) && ($read1_tmp !~ /N/) && ($read2_tmp !~ /N/)) {
-            #--------------------------------------------------
-            # extract error locations
-            #--------------------------------------------------
-            &extract_error_location($each_alignment1);
-            &extract_error_location($each_alignment2);
+            if ((!defined($xn1)) && (!defined($xn2))) {
+               #--------------------------------------------------
+               # extract error locations
+               #--------------------------------------------------
+               &extract_error_location($each_alignment1);
+               &extract_error_location($each_alignment2);
 
-            #--------------------------------------------------
-            # write outputs
-            #--------------------------------------------------
-            # write locations
-            # <read name> <ref 1 or 2> <ref name> <strand> <start index> <substitutions> <insertions> <deletions>
-            # <ref 1 or 2>: always 1 for the reads not generate using pIRS
-            print FH_LOCATION "$final_read_name1 1 $final_ref_name1 $final_strand1 $final_start_index1 $final_read_length1 $list_substitutions1 $list_insertions1 $list_deletions1\n";
-            print FH_LOCATION "$final_read_name2 1 $final_ref_name2 $final_strand2 $final_start_index2 $final_read_length2 $list_substitutions2 $list_insertions2 $list_deletions2\n";
+               #--------------------------------------------------
+               # write outputs
+               #--------------------------------------------------
+               # write locations
+               # <read name> <ref 1 or 2> <ref name> <strand> <start index> <substitutions> <insertions> <deletions>
+               # <ref 1 or 2>: always 1 for the reads not generate using pIRS
+               print FH_LOCATION "$final_read_name1 1 $final_ref_name1 $final_strand1 $final_start_index1 $final_read_length1 $list_substitutions1 $list_insertions1 $list_deletions1\n";
+               print FH_LOCATION "$final_read_name2 1 $final_ref_name2 $final_strand2 $final_start_index2 $final_read_length2 $list_substitutions2 $list_insertions2 $list_deletions2\n";
 
-            # write error-free reads
-            print FH_FASTA1 ">${final_read_name1}\n";
-            print FH_FASTA1 "$error_free_seq1\n";
-            print FH_FASTA2 ">${final_read_name2}\n";
-            print FH_FASTA2 "$error_free_seq2\n";
+               # write error-free reads
+               print FH_FASTA1 ">${final_read_name1}\n";
+               print FH_FASTA1 "$error_free_seq1\n";
+               print FH_FASTA2 ">${final_read_name2}\n";
+               print FH_FASTA2 "$error_free_seq2\n";
+            }
          }
       }
    }
