@@ -1,5 +1,6 @@
 CC=g++
 CFLAGS=-Wall -O3 -std=c++11
+LDFLAGS=-lboost_iostreams -std=c++11
 SRC_DIR=src
 LIB_DIR=lib
 BIN_DIR=bin
@@ -7,34 +8,34 @@ BIN_DIR=bin
 all: generate-a-single generate-q-single reconstruct q-to-q-paired q-to-q-single q-to-a-paired q-to-a-single remove-postfix-lsc remove-postfix-proovread sam-paired evaluate
 
 generate-a-single: $(SRC_DIR)/generate-map.from-fasta.single.common.o
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/generate-map.from-fasta.single.common $(SRC_DIR)/generate-map.from-fasta.single.common.o
+	$(CC) $(LDFLAGS) -o $(BIN_DIR)/generate-map.from-fasta.single.common $(SRC_DIR)/generate-map.from-fasta.single.common.o
 
 generate-q-single: $(SRC_DIR)/generate-map.from-fastq.single.common.o
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/generate-map.from-fastq.single.common $(SRC_DIR)/generate-map.from-fastq.single.common.o
+	$(CC) $(LDFLAGS) -o $(BIN_DIR)/generate-map.from-fastq.single.common $(SRC_DIR)/generate-map.from-fastq.single.common.o
 
 reconstruct: $(SRC_DIR)/reconstruct-genome.rna.o
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/reconstruct-genome.rna $(SRC_DIR)/reconstruct-genome.rna.o
+	$(CC) $(LDFLAGS) -o $(BIN_DIR)/reconstruct-genome.rna $(SRC_DIR)/reconstruct-genome.rna.o
 
 q-to-q-paired: $(SRC_DIR)/write-order-file.from-fastq.to-fastq.paired.common.o
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/write-order-file.from-fastq.to-fastq.paired.common $(SRC_DIR)/write-order-file.from-fastq.to-fastq.paired.common.o
+	$(CC) $(LDFLAGS) -o $(BIN_DIR)/write-order-file.from-fastq.to-fastq.paired.common $(SRC_DIR)/write-order-file.from-fastq.to-fastq.paired.common.o
 
 q-to-q-single: $(SRC_DIR)/write-order-file.from-fastq.to-fastq.single.common.o
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/write-order-file.from-fastq.to-fastq.single.common $(SRC_DIR)/write-order-file.from-fastq.to-fastq.single.common.o
+	$(CC) $(LDFLAGS) -o $(BIN_DIR)/write-order-file.from-fastq.to-fastq.single.common $(SRC_DIR)/write-order-file.from-fastq.to-fastq.single.common.o
 
 q-to-a-paired: $(SRC_DIR)/write-order-file.from-fastq.to-fasta.paired.common.o
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/write-order-file.from-fastq.to-fasta.paired.common $(SRC_DIR)/write-order-file.from-fastq.to-fasta.paired.common.o
+	$(CC) $(LDFLAGS) -o $(BIN_DIR)/write-order-file.from-fastq.to-fasta.paired.common $(SRC_DIR)/write-order-file.from-fastq.to-fasta.paired.common.o
 
 q-to-a-single: $(SRC_DIR)/write-order-file.from-fastq.to-fasta.single.common.o
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/write-order-file.from-fastq.to-fasta.single.common $(SRC_DIR)/write-order-file.from-fastq.to-fasta.single.common.o
+	$(CC) $(LDFLAGS) -o $(BIN_DIR)/write-order-file.from-fastq.to-fasta.single.common $(SRC_DIR)/write-order-file.from-fastq.to-fasta.single.common.o
 
 remove-postfix-lsc: $(SRC_DIR)/remove-postfix.fasta.single.lsc.o
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/remove-postfix.fasta.single.lsc $(SRC_DIR)/remove-postfix.fasta.single.lsc.cpp
+	$(CC) $(LDFLAGS) -o $(BIN_DIR)/remove-postfix.fasta.single.lsc $(SRC_DIR)/remove-postfix.fasta.single.lsc.cpp
 
 remove-postfix-proovread: $(SRC_DIR)/remove-postfix.fasta.single.proovread.o
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/remove-postfix.fasta.single.proovread $(SRC_DIR)/remove-postfix.fasta.single.proovread.cpp
+	$(CC) $(LDFLAGS) -o $(BIN_DIR)/remove-postfix.fasta.single.proovread $(SRC_DIR)/remove-postfix.fasta.single.proovread.cpp
 
 sam-paired: $(SRC_DIR)/write-order-file.sam.paired.common.o
-	$(CC) $(CFLAGS) -o $(BIN_DIR)/write-order-file.sam.paired.common $(SRC_DIR)/write-order-file.sam.paired.common.o
+	$(CC) $(LDFLAGS) -o $(BIN_DIR)/write-order-file.sam.paired.common $(SRC_DIR)/write-order-file.sam.paired.common.o
 
 $(SRC_DIR)/generate-map.from-fasta.single.common.o: $(SRC_DIR)/generate-map.from-fasta.single.common.cpp
 	$(CC) $(CFLAGS) -c -o $@ $?
