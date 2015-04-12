@@ -4,9 +4,12 @@
 #include <fstream>
 #include <string>
 #include <cstdlib>
+#include <regex>
 #include <unordered_map>
 #include <sstream>
 #include <iterator>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 
 int main (int argc, char** argv) {
    // check the number of arguments
@@ -15,14 +18,45 @@ int main (int argc, char** argv) {
       exit(EXIT_FAILURE);
    }
 
+   // check whether the input is gzipped
+   std::string in_fastq(argv[1]);
+
+   bool is_gzip(false);
+
+   std::smatch smatch1;
+
+   std::regex rx_gz_ext("\\.gz$");
+
+   if (std::regex_search(in_fastq, smatch1, rx_gz_ext)) {
+      is_gzip = true;
+   }   
+
    // open the original fastq file
    std::ifstream f_in_original;
-   f_in_original.open(argv[1]);
+
+   if (is_gzip) {
+      f_in_original.open(argv[1], std::ios_base::binary);
+   }   
+   else {
+      f_in_original.open(argv[1]);
+   }   
 
    if (f_in_original.is_open() == false) {
       std::cout << std::endl << "ERROR: Cannot open " << argv[1] << std::endl << std::endl;
       exit(EXIT_FAILURE);
    }
+
+   // set the io filter
+   boost::iostreams::filtering_istream f_in_original_filter;
+
+   if (is_gzip) {
+      f_in_original_filter.push(boost::iostreams::gzip_decompressor());
+      f_in_original_filter.push(f_in_original);
+
+   }   
+   else {
+      f_in_original_filter.push(f_in_original);
+   }   
 
    //--------------------------------------------------
    // construct a hash table
@@ -36,9 +70,9 @@ int main (int argc, char** argv) {
 
    bool already_warned(false);
 
-   getline(f_in_original, line_header);
+   getline(f_in_original_filter, line_header);
 
-   while (!f_in_original.eof()) {
+   while (!f_in_original_filter.eof()) {
       // count the number of words in the header
       if (already_warned == false) {
          std::size_t num_words(std::distance(std::istream_iterator<std::string>(std::istringstream(line_header) >> std::ws), std::istream_iterator<std::string>()));
@@ -84,12 +118,12 @@ int main (int argc, char** argv) {
       }
 
       // read remaining lines of the read
-      getline(f_in_original, line_header);
-      getline(f_in_original, line_header);
-      getline(f_in_original, line_header);
+      getline(f_in_original_filter, line_header);
+      getline(f_in_original_filter, line_header);
+      getline(f_in_original_filter, line_header);
 
       // new header
-      getline(f_in_original, line_header);
+      getline(f_in_original_filter, line_header);
    }
 
    f_in_original.close();
