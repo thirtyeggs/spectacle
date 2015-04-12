@@ -48,6 +48,7 @@ my $in_prefix;
 my $in_fastq;
 my $in_tmp_dir;
 my $in_softclip;
+my $in_ref;
 
 my $out_order_file;
 my $out_sorted_order_file;
@@ -63,6 +64,12 @@ my $error_free_seq;
 my $list_substitutions;
 my $list_insertions;
 my $list_deletions;
+
+my $hash_ref_index = 0;
+
+my %hash_ref;
+my %hash_ref_name_to_index;
+my %hash_ref_index_to_name;
 
 my $header =
 "
@@ -83,6 +90,7 @@ ARGUMENT          DESCRIPTION                   MANDATORY      DEFAULT
 -bam    <file>    input bam file                Y
 -prefix <string>  output file prefix            Y
 -q      <file>    input fastq file              Y
+-ref    <file>    reference fasta file          N
 -softclip         soft clipping -> insertions   N
 -tmp    <dir>     tmp directory for sorting     N
 ----------------------------------------------------------------------
@@ -97,6 +105,10 @@ ARGUMENT          DESCRIPTION                   MANDATORY      DEFAULT
 &print_header;
 
 &parse_arguments;
+
+if (defined($in_ref)) {
+   &read_reference;
+}
 
 &convert_bam_to_location;
 
@@ -141,6 +153,7 @@ sub parse_arguments {
                     "softclip" => \$in_softclip,
                     "prefix=s" => \$in_prefix,
                     "q=s"      => \$in_fastq,
+                    "ref=s"    => \$in_ref,
                     "tmp=s"    => \$in_tmp_dir,
                    )
        or $help) {
@@ -161,6 +174,13 @@ sub parse_arguments {
    }
    elsif (!-e "$in_fastq") {
       die "\nERROR: Cannot open $in_fastq\n\n";
+   }
+
+   # reference
+   if (defined($in_ref)) {
+      if (!-e "$in_ref") {
+         die "\nERROR: Cannot open $in_ref\n\n";
+      }
    }
 
    # prefix
@@ -204,6 +224,8 @@ sub convert_bam_to_location {
    my $bam_iterator = $fh_bam->features(-iterator => 1);
    my $prev_pair_name = "";
    my $buffer;
+   my $ref_sequence;
+   my $flag_write;
 
    while (my $each_alignment = $bam_iterator->next_seq) {
       # the read name of $each_alignment should be different from that of the previous alignment
@@ -242,13 +264,13 @@ sub convert_bam_to_location {
          #--------------------------------------------------
          # check flags
          #--------------------------------------------------
-         # "XN" is set when there are ambiguous bases in the reference
+         # $start_* and $end_*: 1-based
          my $flag        = $each_alignment->flag;
          my $read_name   = $each_alignment->qname;
          my $start_index = $each_alignment->start;
+         my $end_index   = $each_alignment->end;
          my $ref_name    = $each_alignment->seq_id;
          my $strand      = $each_alignment->strand;
-         my $xn          = $each_alignment->aux_get("XN");
          my $read_length = length($each_alignment->query->dna);
 
          # primary alignement?
@@ -288,12 +310,23 @@ sub convert_bam_to_location {
 
          my $read_tmp = $each_alignment->query->dna;
          if (($cigar_str !~ /[SHP=X]/) && ($read_tmp !~ /N/)) {
-            if (!defined($xn)) {
+            # check whether a corresponding reference sequence has Ns
+            $flag_write = 1;
+
+            if (defined($in_ref)) {
+               $ref_sequence = substr($hash_ref{$ref_name}, $start_index - 1, $end_index - $start_index + 1);
+
+               if ($ref_sequence =~ /N/) {
+                  $flag_write = 0;
+               }
+            }
+
+            if ($flag_write == 1) {
                #--------------------------------------------------
                # extract error locations
                #--------------------------------------------------
                &extract_error_location($each_alignment);
-
+   
                #--------------------------------------------------
                # write outputs
                #--------------------------------------------------
@@ -301,7 +334,7 @@ sub convert_bam_to_location {
                # <read name> <ref 1 or 2> <ref name> <strand> <start index> <substitutions> <insertions> <deletions>
                # <ref 1 or 2>: always 1 for the reads not generate using pIRS
                print FH_LOCATION "$read_name 1 $ref_name $strand $start_index $read_length $list_substitutions $list_insertions $list_deletions\n";
-
+   
                # write error-free reads
                print FH_FASTA ">${read_name}\n";
                print FH_FASTA "$error_free_seq\n";
@@ -703,4 +736,65 @@ sub fill_lines_for_unaligned_reads {
    unlink $out_location_file_sorted_tmp;
 
    print "     Filling empty lines: done\n"
+}
+
+
+
+#----------------------------------------------------------------------
+# read_reference
+#----------------------------------------------------------------------
+sub read_reference {
+   # open files
+   my $fh_in;
+   open $fh_in, "$in_ref"
+      or die "\nERROR: Cannot open $in_ref\n\n";
+
+   my $seq_name_reading      = "";
+   my $seq_name_reading_tmp  = "";
+   my $buffer                = "";
+
+   while (my $line = <$fh_in>) {
+      chomp $line;
+
+      if ($line =~ /^>(\S+)/) {
+         $seq_name_reading_tmp = $1;
+
+         # update the hash table
+         # not the first sequence
+         if ($seq_name_reading ne "") {
+            if (length($buffer) > 0) {
+               $hash_ref{$seq_name_reading} = $buffer;
+               $hash_ref_index++;
+               $hash_ref_name_to_index{$seq_name_reading} = $hash_ref_index;
+               $hash_ref_index_to_name{$hash_ref_index} = $seq_name_reading;
+            }
+            else {
+               die "\nERROR: Buffer is empty\n\n";
+            }
+         }
+
+         $seq_name_reading = $seq_name_reading_tmp;
+         $buffer           = "";
+      }
+      elsif ($line =~ /^$/) {
+      }
+      else {
+         $line = uc $line;
+         $buffer = $buffer . $line;
+      }
+   }
+
+   if (length($buffer) > 0) {
+      unless(defined($_[1]{$seq_name_reading})) {
+         $hash_ref{$seq_name_reading} = $buffer;
+         $hash_ref_index++;
+         $hash_ref_name_to_index{$seq_name_reading} = $hash_ref_index;
+         $hash_ref_index_to_name{$hash_ref_index} = $seq_name_reading;
+      }
+      else {
+         die "\nERROR: Same sequence name\n\n";
+      }
+   }
+
+   close $fh_in;
 }
