@@ -13,6 +13,13 @@ if ($@) {
    die "\nERROR: Module Bio::DB::Sam is not installed\n\n";
 }
 
+eval {
+   use IO::Uncompress::Gunzip qw($GunzipError);
+};
+if ($@) {
+   die "\nERROR: Module IO::Uncompress::Gunzip is not installed\n\n";
+}
+
 # use the library for version control
 my $directory;
 BEGIN {$directory = dirname $0;} 
@@ -47,6 +54,7 @@ my $in_fastq2;
 my $in_tmp_dir;
 my $in_softclip;
 my $in_ref;
+my $in_error_free;
 
 my $out_order_file;
 my $out_sorted_order_file;
@@ -59,7 +67,6 @@ my $out_error_free_fasta1_tmp;
 my $out_error_free_fasta2_tmp;
 
 my $help;
-my $error_free_read;
 my $error_free_seq1;
 my $error_free_seq2;
 my $list_substitutions1;
@@ -92,6 +99,7 @@ ARGUMENT          DESCRIPTION                   MANDATORY      DEFAULT
 ----------------------------------------------------------------------
 -h                print help                    N
 -bam    <file>    input bam file                Y
+-errorfree        generate error-free fasta     N
 -prefix <string>  output file prefix            Y
 -q1     <file>    input forward fastq file      Y
 -q2     <file>    input reverse fastq file      Y
@@ -153,14 +161,15 @@ sub parse_arguments {
    print "Parsing arguments\n";
 
    if (!GetOptions (
-                    "h"        => \$help,
-                    "bam=s"    => \$in_bam_file,
-                    "softclip" => \$in_softclip,
-                    "prefix=s" => \$in_prefix,
-                    "q1=s"     => \$in_fastq1,
-                    "q2=s"     => \$in_fastq2,
-                    "ref=s"    => \$in_ref,
-                    "tmp=s"    => \$in_tmp_dir,
+                    "bam=s"     => \$in_bam_file,
+                    "errorfree" => \$in_error_free,
+                    "h"         => \$help,
+                    "prefix=s"  => \$in_prefix,
+                    "q1=s"      => \$in_fastq1,
+                    "q2=s"      => \$in_fastq2,
+                    "ref=s"     => \$in_ref,
+                    "softclip"  => \$in_softclip,
+                    "tmp=s"     => \$in_tmp_dir,
                    )
        or $help) {
       die $usage;
@@ -232,10 +241,16 @@ sub convert_bam_to_location {
 
    open FH_LOCATION, ">$out_location_file_tmp"
       or die "\nERROR: Cannot open $out_location_file_tmp\n\n";
-   open FH_FASTA1, ">$out_error_free_fasta1_tmp"
-      or die "\nERROR: Cannot open $out_error_free_fasta1_tmp\n\n";
-   open FH_FASTA2, ">$out_error_free_fasta2_tmp"
-      or die "\nERROR: Cannot open $out_error_free_fasta2_tmp\n\n";
+
+   my $fh_fasta1;
+   my $fh_fasta2;
+
+   if (defined($in_error_free)) {
+      open $fh_fasta1, ">$out_error_free_fasta1_tmp"
+         or die "\nERROR: Cannot open $out_error_free_fasta1_tmp\n\n";
+      open $fh_fasta2, ">$out_error_free_fasta2_tmp"
+         or die "\nERROR: Cannot open $out_error_free_fasta2_tmp\n\n";
+   }
 
    my $fh_bam = Bio::DB::Sam->new(-bam => $in_bam_file);
    my $bam_iterator = $fh_bam->features(-iterator => 1);
@@ -448,18 +463,23 @@ sub convert_bam_to_location {
                print FH_LOCATION "$final_read_name2 1 $final_ref_name2 $final_strand2 $final_start_index2 $final_read_length2 $list_substitutions2 $list_insertions2 $list_deletions2\n";
    
                # write error-free reads
-               print FH_FASTA1 ">${final_read_name1}\n";
-               print FH_FASTA1 "$error_free_seq1\n";
-               print FH_FASTA2 ">${final_read_name2}\n";
-               print FH_FASTA2 "$error_free_seq2\n";
+               if (defined($in_error_free)) {
+                  print $fh_fasta1 ">${final_read_name1}\n";
+                  print $fh_fasta1 "$error_free_seq1\n";
+                  print $fh_fasta2 ">${final_read_name2}\n";
+                  print $fh_fasta2 "$error_free_seq2\n";
+               }
             }
          }
       }
    }
 
    close FH_LOCATION;
-   close FH_FASTA1;
-   close FH_FASTA2;
+
+   if (defined($in_error_free)) {
+      close $fh_fasta1;
+      close $fh_fasta2;
+   }
 
    # total number of errors
    printf "     Total number of substitutions         : %11d\n", $total_num_substitutions;
@@ -768,10 +788,27 @@ sub fill_lines_for_unaligned_reads {
       or die "\nERROR: Cannot open $out_location_file_sorted_tmp\n\n";
    open FH_LOCATION, ">$out_location_file"
       or die "\nERROR: Cannot open $out_location_file\n\n";
-   open FH_FASTQ1, "$in_fastq1"
-      or die "\nERROR: Cannot open $in_fastq1\n\n";
-   open FH_FASTQ2, "$in_fastq2"
-      or die "\nERROR: Cannot open $in_fastq2\n\n";
+
+   my $fh_fastq1;
+   my $fh_fastq2;
+
+   if ($in_fastq1 =~ /\.gz$/) {
+      $fh_fastq1 = IO::Uncompress::Gunzip->new($in_fastq1)
+         or die "\nERROR: Cannot open $in_fastq1\n\n";
+   }
+   else {
+      open $fh_fastq1, "$in_fastq1"
+         or die "\nERROR: Cannot open $in_fastq1\n\n";
+   }
+
+   if ($in_fastq2 =~ /\.gz$/) {
+      $fh_fastq2 = IO::Uncompress::Gunzip->new($in_fastq2)
+         or die "\nERROR: Cannot open $in_fastq2\n\n";
+   }
+   else {
+      open $fh_fastq2, "$in_fastq2"
+         or die "\nERROR: Cannot open $in_fastq2\n\n";
+   }
 
    my $prev_order = 0;
    my $line_fastq;
@@ -793,7 +830,7 @@ sub fill_lines_for_unaligned_reads {
       #--------------------------------------------------
       for (my $i = 0; $i < ($current_order - $prev_order - 1); $i++) {
          # forward read
-         $line_fastq = <FH_FASTQ1>;
+         $line_fastq = <$fh_fastq1>;
          if (defined($line_fastq)) {
             if ($line_fastq =~ /^\@(\S+)/) {
                $read_name_fastq = $1;
@@ -809,7 +846,7 @@ sub fill_lines_for_unaligned_reads {
          }
 
          # reverse read
-         $line_fastq = <FH_FASTQ2>;
+         $line_fastq = <$fh_fastq2>;
          if (defined($line_fastq)) {
             if ($line_fastq =~ /^\@(\S+)/) {
                $read_name_fastq = $1;
@@ -825,13 +862,13 @@ sub fill_lines_for_unaligned_reads {
          }
 
          # skip remaining lines
-         $line_fastq = <FH_FASTQ1>;
-         $line_fastq = <FH_FASTQ1>;
-         $line_fastq = <FH_FASTQ1>;
+         $line_fastq = <$fh_fastq1>;
+         $line_fastq = <$fh_fastq1>;
+         $line_fastq = <$fh_fastq1>;
 
-         $line_fastq = <FH_FASTQ2>;
-         $line_fastq = <FH_FASTQ2>;
-         $line_fastq = <FH_FASTQ2>;
+         $line_fastq = <$fh_fastq2>;
+         $line_fastq = <$fh_fastq2>;
+         $line_fastq = <$fh_fastq2>;
       }
 
       #--------------------------------------------------
@@ -867,8 +904,8 @@ sub fill_lines_for_unaligned_reads {
       my $read_name_fastq1;
       my $read_name_fastq2;
 
-      my $line_fastq1 = <FH_FASTQ1>;
-      my $line_fastq2 = <FH_FASTQ2>;
+      my $line_fastq1 = <$fh_fastq1>;
+      my $line_fastq2 = <$fh_fastq2>;
 
       if ($line_fastq1 =~ /^\@(\S+)/) {
          $read_name_fastq1 = $1;
@@ -898,19 +935,19 @@ sub fill_lines_for_unaligned_reads {
       $prev_order = $current_order;
 
       # remaining lines in reads
-      $line_fastq1 = <FH_FASTQ1>;
-      $line_fastq1 = <FH_FASTQ1>;
-      $line_fastq1 = <FH_FASTQ1>;
+      $line_fastq1 = <$fh_fastq1>;
+      $line_fastq1 = <$fh_fastq1>;
+      $line_fastq1 = <$fh_fastq1>;
 
-      $line_fastq2 = <FH_FASTQ2>;
-      $line_fastq2 = <FH_FASTQ2>;
-      $line_fastq2 = <FH_FASTQ2>;
+      $line_fastq2 = <$fh_fastq2>;
+      $line_fastq2 = <$fh_fastq2>;
+      $line_fastq2 = <$fh_fastq2>;
    }
 
    #--------------------------------------------------
    # reads after the last aligned reads
    #--------------------------------------------------
-   while ($line_fastq = <FH_FASTQ1>) {
+   while ($line_fastq = <$fh_fastq1>) {
       # forward read
       if ($line_fastq =~ /^\@(\S+)/) {
          $read_name_fastq = $1;
@@ -922,7 +959,7 @@ sub fill_lines_for_unaligned_reads {
       }
 
       # reverse read
-      $line_fastq = <FH_FASTQ2>;
+      $line_fastq = <$fh_fastq2>;
       if (defined($line_fastq)) {
          if ($line_fastq =~ /^\@(\S+)/) {
             $read_name_fastq = $1;
@@ -938,20 +975,21 @@ sub fill_lines_for_unaligned_reads {
       }
 
       # skip remaining lines
-      $line_fastq = <FH_FASTQ1>;
-      $line_fastq = <FH_FASTQ1>;
-      $line_fastq = <FH_FASTQ1>;
+      $line_fastq = <$fh_fastq1>;
+      $line_fastq = <$fh_fastq1>;
+      $line_fastq = <$fh_fastq1>;
 
-      $line_fastq = <FH_FASTQ2>;
-      $line_fastq = <FH_FASTQ2>;
-      $line_fastq = <FH_FASTQ2>;
+      $line_fastq = <$fh_fastq2>;
+      $line_fastq = <$fh_fastq2>;
+      $line_fastq = <$fh_fastq2>;
    }
 
    close FH_SORTED_ORDER;
    close FH_SORTED_LOCATION_TMP;
    close FH_LOCATION;
-   close FH_FASTQ1;
-   close FH_FASTQ2;
+
+   close $fh_fastq1;
+   close $fh_fastq2;
 
    unlink $out_location_file_sorted_tmp;
 
