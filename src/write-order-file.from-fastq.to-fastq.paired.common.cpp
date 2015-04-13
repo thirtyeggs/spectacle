@@ -51,7 +51,6 @@ int main (int argc, char** argv) {
    if (is_gzip) {
       f_in_original_filter.push(boost::iostreams::gzip_decompressor());
       f_in_original_filter.push(f_in_original);
-
    }   
    else {
       f_in_original_filter.push(f_in_original);
