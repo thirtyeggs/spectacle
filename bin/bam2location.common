@@ -245,12 +245,10 @@ sub convert_bam_to_location {
    my $fh_fasta1;
    my $fh_fasta2;
 
-   if (defined($in_error_free)) {
-      open $fh_fasta1, ">$out_error_free_fasta1_tmp"
-         or die "\nERROR: Cannot open $out_error_free_fasta1_tmp\n\n";
-      open $fh_fasta2, ">$out_error_free_fasta2_tmp"
-         or die "\nERROR: Cannot open $out_error_free_fasta2_tmp\n\n";
-   }
+   open $fh_fasta1, ">$out_error_free_fasta1_tmp"
+      or die "\nERROR: Cannot open $out_error_free_fasta1_tmp\n\n";
+   open $fh_fasta2, ">$out_error_free_fasta2_tmp"
+      or die "\nERROR: Cannot open $out_error_free_fasta2_tmp\n\n";
 
    my $fh_bam = Bio::DB::Sam->new(-bam => $in_bam_file);
    my $bam_iterator = $fh_bam->features(-iterator => 1);
@@ -452,7 +450,7 @@ sub convert_bam_to_location {
                #--------------------------------------------------
                &extract_error_location($each_alignment1);
                &extract_error_location($each_alignment2);
-   
+
                #--------------------------------------------------
                # write outputs
                #--------------------------------------------------
@@ -461,13 +459,19 @@ sub convert_bam_to_location {
                # <ref 1 or 2>: always 1 for the reads not generate using pIRS
                print FH_LOCATION "$final_read_name1 1 $final_ref_name1 $final_strand1 $final_start_index1 $final_read_length1 $list_substitutions1 $list_insertions1 $list_deletions1\n";
                print FH_LOCATION "$final_read_name2 1 $final_ref_name2 $final_strand2 $final_start_index2 $final_read_length2 $list_substitutions2 $list_insertions2 $list_deletions2\n";
-   
+
                # write error-free reads
+               print $fh_fasta1 ">${final_read_name1}\n";
+
+               # $fh_fasta1 is needed even when -errorfree option is not used
+               # for reordering
                if (defined($in_error_free)) {
-                  print $fh_fasta1 ">${final_read_name1}\n";
                   print $fh_fasta1 "$error_free_seq1\n";
                   print $fh_fasta2 ">${final_read_name2}\n";
                   print $fh_fasta2 "$error_free_seq2\n";
+               }
+               else {
+                  print $fh_fasta1 "\n";
                }
             }
          }
@@ -475,11 +479,8 @@ sub convert_bam_to_location {
    }
 
    close FH_LOCATION;
-
-   if (defined($in_error_free)) {
-      close $fh_fasta1;
-      close $fh_fasta2;
-   }
+   close $fh_fasta1;
+   close $fh_fasta2;
 
    # total number of errors
    printf "     Total number of substitutions         : %11d\n", $total_num_substitutions;
@@ -715,33 +716,35 @@ sub reorder_output_files {
    # set shell variables
    $ENV{bam2location_order}  = $out_order_file;
 
-   # forward error-free read file
-   $ENV{bam2location_input}  = $out_error_free_fasta1_tmp;
-   $ENV{bam2location_output} = $out_error_free_fasta1;
-   print "     Reordering forward error-free reads";
-   if (defined($in_tmp_dir)) {
-      $ENV{bam2location_tmp} = $in_tmp_dir;
-      $cmd = q{awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' $bam2location_input | paste $bam2location_order - | sort -T $bam2location_tmp -k1 -n | cut -f 2- |  tr "\v" "\n" > $bam2location_output};
-   }
-   else {
-      $cmd = q{awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' $bam2location_input | paste $bam2location_order - | sort -k1 -n | cut -f 2- |  tr "\v" "\n" > $bam2location_output};
-   }
-   system($cmd);
-   print ": done\n";
+   if (defined($in_error_free)) {
+      # forward error-free read file
+      $ENV{bam2location_input}  = $out_error_free_fasta1_tmp;
+      $ENV{bam2location_output} = $out_error_free_fasta1;
+      print "     Reordering forward error-free reads";
+      if (defined($in_tmp_dir)) {
+         $ENV{bam2location_tmp} = $in_tmp_dir;
+         $cmd = q{awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' $bam2location_input | paste $bam2location_order - | sort -T $bam2location_tmp -k1 -n | cut -f 2- |  tr "\v" "\n" > $bam2location_output};
+      }
+      else {
+         $cmd = q{awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' $bam2location_input | paste $bam2location_order - | sort -k1 -n | cut -f 2- |  tr "\v" "\n" > $bam2location_output};
+      }
+      system($cmd);
+      print ": done\n";
 
-   # reverse error-free read file
-   $ENV{bam2location_input}  = $out_error_free_fasta2_tmp;
-   $ENV{bam2location_output} = $out_error_free_fasta2;
-   print "     Reordering reverse error-free reads";
-   if (defined($in_tmp_dir)) {
-      $ENV{bam2location_tmp} = $in_tmp_dir;
-      $cmd = q{awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' $bam2location_input | paste $bam2location_order - | sort -T $bam2location_tmp -k1 -n | cut -f 2- |  tr "\v" "\n" > $bam2location_output};
+      # reverse error-free read file
+      $ENV{bam2location_input}  = $out_error_free_fasta2_tmp;
+      $ENV{bam2location_output} = $out_error_free_fasta2;
+      print "     Reordering reverse error-free reads";
+      if (defined($in_tmp_dir)) {
+         $ENV{bam2location_tmp} = $in_tmp_dir;
+         $cmd = q{awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' $bam2location_input | paste $bam2location_order - | sort -T $bam2location_tmp -k1 -n | cut -f 2- |  tr "\v" "\n" > $bam2location_output};
+      }
+      else {
+         $cmd = q{awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' $bam2location_input | paste $bam2location_order - | sort -k1 -n | cut -f 2- |  tr "\v" "\n" > $bam2location_output};
+      }
+      system($cmd);
+      print ": done\n";
    }
-   else {
-      $cmd = q{awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' $bam2location_input | paste $bam2location_order - | sort -k1 -n | cut -f 2- |  tr "\v" "\n" > $bam2location_output};
-   }
-   system($cmd);
-   print ": done\n";
 
    # location file
    $ENV{bam2location_input}  = $out_location_file_tmp;
