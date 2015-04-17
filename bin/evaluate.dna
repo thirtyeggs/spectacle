@@ -6,7 +6,6 @@ use File::Basename;
 use Getopt::Long;
 use POSIX;
 use Math::Complex;
-use Sys::CPU;
 
 # these modules should be installed
 eval {
@@ -14,6 +13,13 @@ eval {
 };
 if ($@) {
    die "\nERROR: Module Parallel::MPI::Simple is not installed\n\n";
+}
+
+eval {
+   use Sys::CPU;
+};
+if ($@) {
+   die "\nERROR: Module Sys::CPU is not installed\n\n";
 }
 
 # turn on auto flush
@@ -61,6 +67,7 @@ my $memory_info_system_file       = "/proc/meminfo";
 my $mem_derate                    = 0.8;
 my $ng_cutoff                     = 500;
 my $read_length_array_size        = 50;
+my $max_threads_for_sorting       = 8;
 
 # categorize bases
 # error-free | modified | error-free
@@ -159,6 +166,8 @@ my $cor_num_reads;
 
 my $max_read_length_real;
 
+my $in_num_threads;
+
 # max length of reads that can be evaluated ini parallel
 my $read_length_parallel;
 
@@ -227,6 +236,7 @@ ARGUMENT             DESCRIPTION                   MANDATORY   DEFAULT
 -ref2      <file>    2nd reference fasta file      N
 -samtools  <file>    samtools binary               N
 -similarity          use the similarity metric     N
+-thread    <num>     number of threads for sorting N           # cores
 ----------------------------------------------------------------------
 \n";
 
@@ -569,6 +579,7 @@ sub parse_args {
                     "ref2=s"      => \$in_ref2_file,
                     "samtools=s"  => \$in_samtools,
                     "similarity"  => \$in_similarity,
+                    "thread=i"    => \$in_num_threads,
                    )
        or $help) {
       die $usage;
@@ -1010,6 +1021,22 @@ sub parse_args {
    $hash_complement{"C"} = "G";
    $hash_complement{"G"} = "C";
    $hash_complement{"T"} = "A";
+
+   # number of threads
+   if (defined($in_num_threads)) {
+      if ($in_num_threads > $max_threads_for_sorting) {
+         print "     \nWARNING: Using over $max_threads_for_sorting threads for sorting degrades performance; $max_threads_for_sorting threads will be used\n\n";
+         $in_num_threads = $max_threads_for_sorting;
+      }
+   }
+   else {
+      if (Sys::CPU::cpu_count() > $max_threads_for_sorting) {
+         $in_num_threads = $max_threads_for_sorting;
+      }
+      else {
+         $in_num_threads = Sys::CPU::cpu_count();
+      }
+   }
 
    if ($rank == 0) {
       print "     Code                    : $full_name\n";
@@ -2534,14 +2561,36 @@ sub compare_reads {
    # merge and sort all the depth files
    if (defined($in_detail_prefix)) {
       if ($rank == 0) {
+         # check whether sort support multithreads
+         my $check_log;
+         my $support_parallel;
+
+         $check_log        = `sort --parallel 2>&1`;
+         $support_parallel = 0;
+
+         if ($check_log =~ /requires an argument/) {
+            $support_parallel = 1;
+         }
+
          # merge and sort the depth files
          my $cmd;
          $ENV{evaluate_dna_depth_prefix} = $in_detail_prefix;
+         $ENV{bam2location_core}         = $in_num_threads;
 
-         $cmd = q{cat ${evaluate_dna_depth_prefix}.ref-1.rank-* | sort -k1,1n -k2,2n - > ${evaluate_dna_depth_prefix}.ref-1.merged.sorted};
+         if ($support_parallel == 1) {
+            $cmd = q{cat ${evaluate_dna_depth_prefix}.ref-1.rank-* | sort --parallel=$bam2location_core -k1,1n -k2,2n - > ${evaluate_dna_depth_prefix}.ref-1.merged.sorted};
+         }
+         else {
+            $cmd = q{cat ${evaluate_dna_depth_prefix}.ref-1.rank-* | sort -k1,1n -k2,2n - > ${evaluate_dna_depth_prefix}.ref-1.merged.sorted};
+         }
          system($cmd);
 
-         $cmd = q{cat ${evaluate_dna_depth_prefix}.ref-2.rank-* | sort -k1,1n -k2,2n - > ${evaluate_dna_depth_prefix}.ref-2.merged.sorted};
+         if ($support_parallel == 1) {
+            $cmd = q{cat ${evaluate_dna_depth_prefix}.ref-2.rank-* | sort --parallel=$bam2location_core -k1,1n -k2,2n - > ${evaluate_dna_depth_prefix}.ref-2.merged.sorted};
+         }
+         else {
+            $cmd = q{cat ${evaluate_dna_depth_prefix}.ref-2.rank-* | sort -k1,1n -k2,2n - > ${evaluate_dna_depth_prefix}.ref-2.merged.sorted};
+         }
          system($cmd);
 
          # initialize the histograms

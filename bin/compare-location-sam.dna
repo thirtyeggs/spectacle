@@ -13,6 +13,13 @@ if ($@) {
    die "\nERROR: Module Bio::DB::Sam is not installed\n\n";
 }
 
+eval {
+   use Sys::CPU;
+};
+if ($@) {
+   die "\nERROR: Module Sys::CPU is not installed\n\n";
+}
+
 # use the library for version control
 my $directory;
 BEGIN {$directory = dirname $0;} 
@@ -42,6 +49,7 @@ my $flag_second                   = 0x0080;
 my $num_uncoverted_bases_ref      = 0;
 my $num_total_bases_ref           = 0;
 my $num_total_bases_aligned_reads = 0;
+my $max_threads_for_sorting       = 8;
 
 # input arguments
 my $location_file;
@@ -52,6 +60,7 @@ my $genome_1_or_2;
 my $strict;
 my $noout;
 my $samtools;
+my $in_num_threads;
 
 my $help;
 my $sorted_using_order_sam_file;
@@ -98,6 +107,7 @@ ARGUMENT          DESCRIPTION                   MANDATORY      DEFAULT
 -sam      <file>  input sam file                Y
 -samtools <file>  samtools binary               Y
 -strict           use the strict matching       N
+-thread    <num>  number of threads for sorting N              # cores
 -t         <dir>  temporary directory for sort  N
 ----------------------------------------------------------------------
 \n";
@@ -416,6 +426,22 @@ sub parse_arguments {
       die "\nERROR: The samtools binary should be specified\n\n";
    }
 
+   # number of threads
+   if (defined($in_num_threads)) {
+      if ($in_num_threads > $max_threads_for_sorting) {
+         print "     \nWARNING: Using over $max_threads_for_sorting threads for sorting degrades performance; $max_threads_for_sorting threads will be used\n\n";
+         $in_num_threads = $max_threads_for_sorting;
+      }
+   }
+   else {
+      if (Sys::CPU::cpu_count() > $max_threads_for_sorting) {
+         $in_num_threads = $max_threads_for_sorting;
+      }
+      else {
+         $in_num_threads = Sys::CPU::cpu_count();
+      }
+   }
+
    print "     Parsing argumetns: done\n\n";
 }
 
@@ -451,20 +477,42 @@ sub write_order_file {
 sub sort_sam_file_using_order_file {
    print "Sorting the sam file using the order file\n";
 
+   # check whether sort support multithreads
+   my $check_log;
+   my $support_parallel;
+
+   $check_log        = `sort --parallel 2>&1`;
+   $support_parallel = 0;
+
+   if ($check_log =~ /requires an argument/) {
+      $support_parallel = 1;
+   }
+
    $ENV{compare_location_sam_order}  = $out_order_file;
    $ENV{compare_location_sam_input}  = $sam_file;
    $ENV{compare_location_sam_output} = $sorted_using_order_sam_file;
+   $ENV{bam2location_core}           = $in_num_threads;
 
    my $cmd;
 
    if (defined($tmp_dir)) {
       $ENV{compare_location_sam_tmp} = $tmp_dir;
       # the header is needed
-      $cmd = q{sed -n -e '/^@/p' $compare_location_sam_input > $compare_location_sam_output; sed '/^\@/d' $compare_location_sam_input | awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' | paste $compare_location_sam_order - | sort -T $compare_location_sam_tmp -k1 -n | cut -f 2- |  tr "\v" "\n" >> $compare_location_sam_output};
+      if ($support_parallel == 1) {
+         $cmd = q{sed -n -e '/^@/p' $compare_location_sam_input > $compare_location_sam_output; sed '/^\@/d' $compare_location_sam_input | awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' | paste $compare_location_sam_order - | sort --parallel=$bam2location_core -T $compare_location_sam_tmp -k1 -n | cut -f 2- |  tr "\v" "\n" >> $compare_location_sam_output};
+      }
+      else {
+         $cmd = q{sed -n -e '/^@/p' $compare_location_sam_input > $compare_location_sam_output; sed '/^\@/d' $compare_location_sam_input | awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' | paste $compare_location_sam_order - | sort -T $compare_location_sam_tmp -k1 -n | cut -f 2- |  tr "\v" "\n" >> $compare_location_sam_output};
+      }
    }   
    else {
       # the header is needed
-      $cmd = q{sed -n -e '/^@/p' $compare_location_sam_input > $compare_location_sam_output; sed '/^\@/d' $compare_location_sam_input | awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' | paste $compare_location_sam_order - | sort -k1 -n | cut -f 2- |  tr "\v" "\n" >> $compare_location_sam_output};
+      if ($support_parallel == 1) {
+         $cmd = q{sed -n -e '/^@/p' $compare_location_sam_input > $compare_location_sam_output; sed '/^\@/d' $compare_location_sam_input | awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' | paste $compare_location_sam_order - | sort --parallel=$bam2location_core -k1 -n | cut -f 2- |  tr "\v" "\n" >> $compare_location_sam_output};
+      }
+      else {
+         $cmd = q{sed -n -e '/^@/p' $compare_location_sam_input > $compare_location_sam_output; sed '/^\@/d' $compare_location_sam_input | awk '{printf("%s%s", $0, (NR % 2 == 0) ? "\n" : "\v")}' | paste $compare_location_sam_order - | sort -k1 -n | cut -f 2- |  tr "\v" "\n" >> $compare_location_sam_output};
+      }
    }   
 
    system($cmd);
@@ -1103,14 +1151,31 @@ sub compare {
 sub sort_sam_file_using_aligned_position {
    print "Sorting the sam file using the aligned positions of reads\n";
 
+   # check whether sort support multithreads
+   my $check_log;
+   my $support_parallel;
+
+   $check_log        = `sort --parallel 2>&1`;
+   $support_parallel = 0;
+
+   if ($check_log =~ /requires an argument/) {
+      $support_parallel = 1;
+   }
+
    $ENV{sort_sam_file_align_in_sam}         = $sam_file;
    $ENV{sort_sam_file_align_out_bam_prefix} = $sorted_using_position_bam_prefix;
    $ENV{sort_sam_file_align_samtools}       = $samtools;
+   $ENV{bam2location_core}                  = $in_num_threads;
 
    my $cmd;
 
    # generate a merged/sorted bam file
-   $cmd = q{$sort_sam_file_align_samtools view -F 0x0004 -Shb $sort_sam_file_align_in_sam | $sort_sam_file_align_samtools sort - $sort_sam_file_align_out_bam_prefix};
+   if ($support_parallel == 1) {
+      $cmd = q{$sort_sam_file_align_samtools view -F 0x0004 -Shb $sort_sam_file_align_in_sam | $sort_sam_file_align_samtools sort --parallel=$bam2location_core - $sort_sam_file_align_out_bam_prefix};
+   }
+   else {
+      $cmd = q{$sort_sam_file_align_samtools view -F 0x0004 -Shb $sort_sam_file_align_in_sam | $sort_sam_file_align_samtools sort - $sort_sam_file_align_out_bam_prefix};
+   }
    system ($cmd);
 
    # generate the index file for the bam
