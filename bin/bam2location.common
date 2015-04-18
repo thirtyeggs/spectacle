@@ -1064,6 +1064,8 @@ sub fill_lines_for_unaligned_reads {
    close $fh_fastq2;
 
    unlink $out_location_file_sorted_tmp;
+   unlink $out_order_file;
+   unlink $out_sorted_order_file;
 
    print "     Filling empty lines: done\n"
 }
