@@ -812,7 +812,7 @@ sub reorder_output_files {
    if (defined($in_tmp_dir)) {
       $ENV{bam2location_tmp} = $in_tmp_dir;
       if ($support_parallel == 1) {
-         $cmd = q{awk '{printf("%s%s", $0, (NR % 2 ==0) ? "\n" : "\v")}' $bam2location_input | paste $bam2location_order - | sort--parallel=$bam2location_core -T $bam2location_tmp -k1 -n | cut -f 2- |  tr "\v" "\n" > $bam2location_output};
+         $cmd = q{awk '{printf("%s%s", $0, (NR % 2 ==0) ? "\n" : "\v")}' $bam2location_input | paste $bam2location_order - | sort --parallel=$bam2location_core -T $bam2location_tmp -k1 -n | cut -f 2- |  tr "\v" "\n" > $bam2location_output};
       }
       else {
          $cmd = q{awk '{printf("%s%s", $0, (NR % 2 ==0) ? "\n" : "\v")}' $bam2location_input | paste $bam2location_order - | sort -T $bam2location_tmp -k1 -n | cut -f 2- |  tr "\v" "\n" > $bam2location_output};
