@@ -68,6 +68,7 @@ my $mem_derate                    = 0.8;
 my $ng_cutoff                     = 500;
 my $read_length_array_size        = 50;
 my $max_threads_for_sorting       = 8;
+my $samtools                      = "${directory}/samtools/install/bin/samtools";
 
 # categorize bases
 # error-free | modified | error-free
@@ -234,7 +235,6 @@ ARGUMENT             DESCRIPTION                   MANDATORY   DEFAULT
 -pacbio              PacBio reads                  N
 -ref1      <file>    1st reference fasta file      Y
 -ref2      <file>    2nd reference fasta file      N
--samtools  <file>    samtools binary               N
 -similarity          use the similarity metric     N
 -thread    <num>     number of threads for sorting N           # cores
 ----------------------------------------------------------------------
@@ -363,7 +363,6 @@ my $in_gap_opening_penalty;
 my $in_gap_extension_penalty;
 my $in_debug_prefix;
 my $in_detail_prefix;
-my $in_samtools;
 my $in_max_depth;
 my $in_ref_seq_outer_length;
 my $in_max_candidates;
@@ -577,7 +576,6 @@ sub parse_args {
                     "pacbio"      => \$in_pacbio,
                     "ref1=s"      => \$in_ref1_file,
                     "ref2=s"      => \$in_ref2_file,
-                    "samtools=s"  => \$in_samtools,
                     "similarity"  => \$in_similarity,
                     "thread=i"    => \$in_num_threads,
                    )
@@ -950,16 +948,6 @@ sub parse_args {
       open $fh_error_index2, ">${in_detail_prefix}.ref-2.rank-${rank_text}"
          or die "\nERROR: Cannot open ${in_detail_prefix}.ref-2.rank-${rank_text}\n\n";
 
-      if (defined($in_samtools)) {
-         # check whether samtools exists
-         unless (-e "$in_samtools") {
-            die "\nERROR: $in_samtools does not exist\n\n";
-         }
-      }
-      else {
-         die "\nERROR: The samtools binary should be specified\n\n";
-      }
-
       # bam1 is defined?
       if (defined($in_bam1_file)) {
          # check whether bam1 exists
@@ -985,12 +973,6 @@ sub parse_args {
       }
 
       $mpileup_file = ${in_detail_prefix} . ".mpileup";
-   }
-   # the depth analysis is turned off
-   else {
-      if (defined($in_samtools)) {
-         die "\nERROR: The \"-samtools\" options should be used with the \"-depth\" option\n\n";
-      }
    }
 
    # map file
@@ -1101,8 +1083,6 @@ sub parse_args {
          if (defined($in_bam2_file)) {
             print "     Bam file 2nd            : $in_bam2_file\n";
          }
-
-         print "     Samtools                : $in_samtools\n";
       }
 
       if (defined($in_debug_prefix)) {
@@ -4122,7 +4102,7 @@ sub run_mpileup {
 
    my ($ref_1_or_2_local, $ref_seq_name, $mpileup_start_index, $mpileup_end_index) = @_;
 
-   $ENV{evaluate_dna_samtools} = $in_samtools;
+   $ENV{evaluate_dna_samtools} = $samtools;
    $ENV{evaluate_dna_mpileup}  = $mpileup_file;
    $ENV{evaluate_dna_ref_seq}  = $ref_seq_name;
    $ENV{evaluate_dna_start}    = $mpileup_start_index;

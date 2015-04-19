@@ -50,6 +50,7 @@ my $num_uncoverted_bases_ref      = 0;
 my $num_total_bases_ref           = 0;
 my $num_total_bases_aligned_reads = 0;
 my $max_threads_for_sorting       = 8;
+my $sambamba                      = "${directory}/sambamba/sambamba_v0.5.4";
 
 # input arguments
 my $location_file;
@@ -59,13 +60,11 @@ my $prefix;
 my $genome_1_or_2;
 my $strict;
 my $noout;
-my $samtools;
 my $in_num_threads;
 
 my $help;
 my $sorted_using_order_sam_file;
 my $sorted_using_position_bam_file;
-my $sorted_using_position_bam_prefix;
 my $out_order_file;
 # MATCHED      this pair is aligned to a correct position
 # MISMATCHED : this pair is aligned to a wrong position
@@ -105,7 +104,6 @@ ARGUMENT          DESCRIPTION                   MANDATORY      DEFAULT
 -noout            write no output file          N
 -prefix <string>  output prefix                 Y
 -sam      <file>  input sam file                Y
--samtools <file>  samtools binary               Y
 -strict           use the strict matching       N
 -thread    <num>  number of threads for sorting N              # cores
 -t         <dir>  temporary directory for sort  N
@@ -225,10 +223,6 @@ print "\n";
 print "     2) When pairs that are aligned in correct positions are counted\n";
 printf "          %-100s: %7.2f times\n", "Entire Chromosomes", 1.0 * $total_once_aligned_read_length / $total_length;
 
-print "\n";
-print "4. Etc.\n";
-print "     Samtools: $samtools\n";
-
 #--------------------------------------------------
 # write a log file
 #--------------------------------------------------
@@ -317,10 +311,6 @@ print FH_LOG "\n";
 print FH_LOG "     2) When pairs that are aligned in correct positions are counted\n";
 printf FH_LOG "          %-100s: %7.2f times\n", "Entire Chromosomes", 1.0 * $total_once_aligned_read_length / $total_length;
 
-print FH_LOG  "\n";
-print FH_LOG  "4. Etc.\n";
-print FH_LOG  "     Samtools: $samtools\n";
-
 close FH_LOG;
 
 print "\n####################### SUCCESSFULLY COMPLETED #######################\n\n";
@@ -359,7 +349,6 @@ sub parse_arguments {
                     "location=s" => \$location_file,
                     "noout"      => \$noout,
                     "sam=s"      => \$sam_file,
-                    "samtools=s" => \$samtools,
                     "strict"     => \$strict,
                     "t=s"        => \$tmp_dir,
                    )
@@ -408,22 +397,10 @@ sub parse_arguments {
       $out_log_file                     = $prefix . ".log";
       $out_align_summary                = $prefix . ".align-summary";
       $sorted_using_order_sam_file      = $prefix . ".sorted.order.sam";
-      $sorted_using_position_bam_prefix = $prefix . ".sorted.position";
       $sorted_using_position_bam_file   = $prefix . ".sorted.position.bam";
    }
    else {
       die "\nERROR: The output file prefix should be defined\n\n";
-   }
-
-   # samtools
-   if (defined($samtools)) {
-      # check whether samtools exists
-      unless (-e "$samtools") {
-         die "\nERROR: $samtools does not exist\n\n";
-      }
-   }
-   else {
-      die "\nERROR: The samtools binary should be specified\n\n";
    }
 
    # number of threads
@@ -1162,24 +1139,24 @@ sub sort_sam_file_using_aligned_position {
       $support_parallel = 1;
    }
 
-   $ENV{sort_sam_file_align_in_sam}         = $sam_file;
-   $ENV{sort_sam_file_align_out_bam_prefix} = $sorted_using_position_bam_prefix;
-   $ENV{sort_sam_file_align_samtools}       = $samtools;
-   $ENV{bam2location_core}                  = $in_num_threads;
+   $ENV{sort_sam_file_align_in_sam}       = $sam_file;
+   $ENV{sort_sam_file_align_out_bam_file} = $sorted_using_position_bam_file;
+   $ENV{sort_sam_file_align_sambamba}     = $sambamba;
+   $ENV{bam2location_core}                = $in_num_threads;
 
    my $cmd;
 
    # generate a merged/sorted bam file
    if ($support_parallel == 1) {
-      $cmd = q{$sort_sam_file_align_samtools view -F 0x0004 -Shb $sort_sam_file_align_in_sam | $sort_sam_file_align_samtools sort --parallel=$bam2location_core - $sort_sam_file_align_out_bam_prefix};
+      $cmd = q{$sort_sam_file_align_sambamba view -t $bam2location_core -F "proper_pair" -S -h -f bam $sort_sam_file_align_in_sam | $sort_sam_file_align_sambamba sort -o $sort_sam_file_align_out_bam_file -t $bam2location_core /dev/stdin};
    }
    else {
-      $cmd = q{$sort_sam_file_align_samtools view -F 0x0004 -Shb $sort_sam_file_align_in_sam | $sort_sam_file_align_samtools sort - $sort_sam_file_align_out_bam_prefix};
+      $cmd = q{$sort_sam_file_align_sambamba view -t $bam2location_core -F "proper_pair" -S -h -f bam $sort_sam_file_align_in_sam | $sort_sam_file_align_sambamba sort -o $sort_sam_file_align_out_bam_file /dev/stdin};
    }
    system ($cmd);
 
    # generate the index file for the bam
-#   $cmd = q{$sort_sam_file_align_samtools index $sort_sam_file_align_out_bam_file};
+#   $cmd = q{$sort_sam_file_align_sambamba index -t $bam2location_core $sort_sam_file_align_out_bam_file};
 #   system ($cmd);
 
    print "     Sorting the sam file using the aligned positions of reads: done\n\n";

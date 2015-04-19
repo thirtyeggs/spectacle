@@ -28,6 +28,7 @@ my $sam_mapping_quality         = 255;
 my $mate_position_text          = "MATE_POSITION_TEXT";
 my $insert_length_text          = "INSERT_LENGTH_TEXT";
 my $flag_proper_pair            = "0x0002";
+my $samtools                    = "${directory}/samtools/install/bin/samtools";
 
 my $in_location_file;
 my $in_fastq1;
@@ -37,7 +38,6 @@ my $in_sam_file;
 my $in_tmp_dir;
 my $in_genome_1_or_2;
 my $in_ref_file;
-my $in_samtools;
 
 my $out_sam_file;
 my $out_merged_sorted_bam_file;
@@ -70,7 +70,6 @@ ARGUMENT            DESCRIPTION                  MANDATORY    DEFAULT
 -prefix  <string>   output file prefix           Y
 -ref       <file>   reference fasta file         Y
 -sam       <file>   input sam file               Y
--samtools  <file>   samtools binary file         Y
 -tmp        <dir>   tmp directory for sorting    N
 ----------------------------------------------------------------------
 \n";
@@ -133,7 +132,6 @@ sub parse_args {
                     "prefix=s"    => \$in_prefix,
                     "ref=s"       => \$in_ref_file,
                     "sam=s"       => \$in_sam_file,
-                    "samtools=s"  => \$in_samtools,
                     "tmp=s"       => \$in_tmp_dir,
                    )
        or $help) {
@@ -200,16 +198,6 @@ sub parse_args {
       $out_samtools_log           = $in_prefix . ".samtools.log";
    }
 
-   # samtools
-#   my @samtools_list = where("samtools");
-#
-#   if ((scalar @samtools_list) > 0) {
-#      $samtools = $samtools_list[0];
-#   }
-#   else {
-#      die "\nERROR: Cannot find samtools in PATH\n\n";
-#   }
-
    print "     Parsing argumetns: done\n";
 }
 
@@ -227,7 +215,6 @@ sub find_not_correctly_aligned_reads {
    $ENV{location_to_sam_prefix}   = "${in_prefix}.compare";
    $ENV{location_to_sam_sam}      = $in_sam_file;
    $ENV{location_to_sam_log}      = $out_location_log_file;
-   $ENV{location_to_sam_samtools} = $in_samtools;
 
    my $cmd;
 
@@ -236,12 +223,12 @@ sub find_not_correctly_aligned_reads {
 
       # genome 1
       if ($in_genome_1_or_2 == 1) {
-         $cmd = q{perl ${location_to_sam_dir}/${location_to_sam_comp_bin} -genome 1 -location $location_to_sam_loc -prefix ${location_to_sam_prefix} -sam $location_to_sam_sam -strict -samtools $location_to_sam_samtools -t $location_to_sam_tmp_dir > $location_to_sam_log};
+         $cmd = q{perl ${location_to_sam_dir}/${location_to_sam_comp_bin} -genome 1 -location $location_to_sam_loc -prefix ${location_to_sam_prefix} -sam $location_to_sam_sam -strict -t $location_to_sam_tmp_dir > $location_to_sam_log};
          system ($cmd);
       }
       # genome 2
       elsif ($in_genome_1_or_2 == 2) {
-         $cmd = q{perl ${location_to_sam_dir}/${location_to_sam_comp_bin} -genome 2 -location $location_to_sam_loc -prefix ${location_to_sam_prefix} -sam $location_to_sam_sam -strict -samtools $location_to_sam_samtools -t $location_to_sam_tmp_dir > $location_to_sam_log};
+         $cmd = q{perl ${location_to_sam_dir}/${location_to_sam_comp_bin} -genome 2 -location $location_to_sam_loc -prefix ${location_to_sam_prefix} -sam $location_to_sam_sam -strict -t $location_to_sam_tmp_dir > $location_to_sam_log};
          system ($cmd);
       }
       else {
@@ -252,12 +239,12 @@ sub find_not_correctly_aligned_reads {
    else {
       # genome 1
       if ($in_genome_1_or_2 == 1) {
-         $cmd = q{perl ${location_to_sam_dir}/${location_to_sam_comp_bin} -genome 1 -location $location_to_sam_loc -prefix ${location_to_sam_prefix} -sam $location_to_sam_sam -strict -samtools $location_to_sam_samtools > $location_to_sam_log};
+         $cmd = q{perl ${location_to_sam_dir}/${location_to_sam_comp_bin} -genome 1 -location $location_to_sam_loc -prefix ${location_to_sam_prefix} -sam $location_to_sam_sam -strict > $location_to_sam_log};
          system ($cmd);
       }
       # genome 2
       elsif ($in_genome_1_or_2 == 2) {
-         $cmd = q{perl ${location_to_sam_dir}/${location_to_sam_comp_bin} -genome 2 -location $location_to_sam_loc -prefix ${location_to_sam_prefix} -sam $location_to_sam_sam -strict -samtools $location_to_sam_samtools > $location_to_sam_log};
+         $cmd = q{perl ${location_to_sam_dir}/${location_to_sam_comp_bin} -genome 2 -location $location_to_sam_loc -prefix ${location_to_sam_prefix} -sam $location_to_sam_sam -strict > $location_to_sam_log};
          system ($cmd);
       }
       else {
@@ -506,7 +493,7 @@ sub merge_sam_files {
 
    $ENV{location_to_sam_in_sam}        = $in_sam_file;
    $ENV{location_to_sam_generated_sam} = $out_sam_file;
-   $ENV{location_to_sam_samtools}      = $in_samtools;
+   $ENV{location_to_sam_samtools}      = $samtools;
    $ENV{location_to_sam_ref_fa}        = $in_ref_file;
    $ENV{location_to_sam_out_prefix}    = $in_prefix;
    $ENV{location_to_sam_out_bam}       = "${in_prefix}.bam";
@@ -516,7 +503,6 @@ sub merge_sam_files {
    my $cmd;
 
    # generate a merged/sorted bam file
-   #$cmd = q{cat $location_to_sam_in_sam $location_to_sam_generated_sam | $location_to_sam_samtools calmd -bS - $location_to_sam_ref_fa | $location_to_sam_samtools sort - $location_to_sam_out_prefix};
    $cmd = q{$location_to_sam_samtools view -f $location_to_sam_flag -Sh $location_to_sam_in_sam | cat - $location_to_sam_generated_sam | $location_to_sam_samtools calmd -bS - $location_to_sam_ref_fa | $location_to_sam_samtools sort - $location_to_sam_out_prefix};
    system ($cmd);
 
