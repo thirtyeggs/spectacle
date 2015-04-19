@@ -102,3 +102,4 @@ clean:
 	rm -f $(SRC_DIR)/evaluate-wrap.cpp
 	rm -f $(LIB_DIR)/evaluate.pm
 	rm -r samtools/install;cd samtools/samtools-1.2; make clean
+	cd zlib; rm -rf install; cd zlib-1.2.8; make clean
