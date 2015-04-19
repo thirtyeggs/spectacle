@@ -24,7 +24,7 @@
 CC       = gcc
 CPPFLAGS = $(DFLAGS) $(INCLUDES)
 CFLAGS   = -g -Wall -O2 -fPIC
-LDFLAGS  =
+LDFLAGS  = -L ../../zlib/install/lib
 LDLIBS   =
 DFLAGS=     -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D_CURSES_LIB=1
 LOBJS=      bam_aux.o bam.o bam_import.o sam.o \
