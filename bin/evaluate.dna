@@ -3403,14 +3403,24 @@ sub compare_one_read {
          if ($seq_name ne $seq_name_prev) {
             if ($ref_1_or_2 eq "1") {
                # remove the previous chromosome
-               $hash_ref_1{$seq_name_prev} = "";
+               if ($ref_1_or_2_prev eq "1") {
+                  $hash_ref_1{$seq_name_prev} = "";
+               }
+               else {
+                  $hash_ref_2{$seq_name_prev} = "";
+               }
 
                # load only one chromosome
                &read_ref_chromosome($in_ref1_file, $seq_name, \%hash_ref_1);
             }
             elsif ($ref_1_or_2 eq "2") {
                # remove the previous chromosome
-               $hash_ref_2{$seq_name_prev} = "";
+               if ($ref_1_or_2_prev eq "1") {
+                  $hash_ref_1{$seq_name_prev} = "";
+               }
+               else {
+                  $hash_ref_2{$seq_name_prev} = "";
+               }
 
                # load only one chromosome
                &read_ref_chromosome($in_ref2_file, $seq_name, \%hash_ref_2);
@@ -3426,7 +3436,7 @@ sub compare_one_read {
                # load only one chromosome
                &read_ref_chromosome($in_ref1_file, $seq_name, \%hash_ref_1);
             }
-            elsif ($ref_1_or_2 eq "2") {
+            else {
                # remove the previous chromosome
                $hash_ref_1{$seq_name_prev} = "";
 
