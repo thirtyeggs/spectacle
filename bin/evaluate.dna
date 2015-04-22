@@ -309,6 +309,8 @@ my $hash_ref_index_2 = 0;
 my $num_trimmed_bases_local = 0;
 my $num_cpus                = Sys::CPU::cpu_count();
 my $seq_name                = $initial_seq_name;
+my $ref_1_or_2              = 0;
+my $ref_1_or_2_prev;
 
 my $seq_name_prev;
 
@@ -418,7 +420,6 @@ my $two_references;
 my $start_index;
 my $end_index;
 my $ref_length_taken;
-my $ref_1_or_2;
 my $strand;
 my $read_name;
 
@@ -3383,15 +3384,57 @@ sub compare_one_read {
    # lines that we are interested in
    # <read name> <ref 1 or 2> <ref name> <strand> <start index> <read length> <substitutions> <insertions> <deletions>
    if ($line_location =~ /^(\S+)\s+([12])\s+(\S+)\s+([\+\-])\s+([\d\-]+)\s+\d+\s+(\S+)\s+(\S+)\s+(\S+)/) {
-         $read_name     = $1;
-         $ref_1_or_2    = $2;
-         $seq_name_prev = $seq_name;
-         $seq_name      = $3;
-         $strand        = $4;
-      my $position      = $5; # start from 1
-         $substitution  = $6;
-         $insertion     = $7;
-         $deletion      = $8;
+         $read_name       = $1;
+
+         $ref_1_or_2_prev = $ref_1_or_2;
+         $ref_1_or_2      = $2;
+
+         $seq_name_prev   = $seq_name;
+         $seq_name        = $3;
+
+         $strand          = $4;
+      my $position        = $5; # start from 1
+         $substitution    = $6;
+         $insertion       = $7;
+         $deletion        = $8;
+
+      if ($in_one_ref) {
+         # a current chromosome is not same as a previous one
+         if ($seq_name ne $seq_name_prev) {
+            if ($ref_1_or_2 eq "1") {
+               # remove the previous chromosome
+               $hash_ref_1{$seq_name_prev} = "";
+
+               # load only one chromosome
+               &read_ref_chromosome($in_ref1_file, $seq_name, \%hash_ref_1);
+            }
+            elsif ($ref_1_or_2 eq "2") {
+               # remove the previous chromosome
+               $hash_ref_2{$seq_name_prev} = "";
+
+               # load only one chromosome
+               &read_ref_chromosome($in_ref2_file, $seq_name, \%hash_ref_2);
+            }
+         }
+         # samt sequence name
+         # but a current reference number is not same as a previous one
+         elsif ($ref_1_or_2 ne $ref_1_or_2_prev) {
+            if ($ref_1_or_2 eq "1") {
+               # remove the previous chromosome
+               $hash_ref_2{$seq_name_prev} = "";
+
+               # load only one chromosome
+               &read_ref_chromosome($in_ref1_file, $seq_name, \%hash_ref_1);
+            }
+            elsif ($ref_1_or_2 eq "2") {
+               # remove the previous chromosome
+               $hash_ref_1{$seq_name_prev} = "";
+
+               # load only one chromosome
+               &read_ref_chromosome($in_ref2_file, $seq_name, \%hash_ref_2);
+            }
+         }
+      }
 
       #--------------------------------------------------
       # a corrected read is same as an original read
@@ -4783,19 +4826,13 @@ sub parse_errors {
 sub read_ref_chromosome {
    # arguemnts
    # 1st($_[0]): $in_ref[12]_file
-   # 2nd($_[1]): $seq_name_prev
-   # 3rd($_[2]): $seq_name
-   # 4th($_[3]): %hash_ref_[12]
+   # 3rd($_[1]): $seq_name
+   # 4th($_[2]): %hash_ref_[12]
 
    # open files
    my $fh_in;
    open $fh_in, "$_[0]"
       or die "\nERROR: Cannot open $_[0]\n\n";
-
-   # remove the previous chromosome
-   if ($_[1] ne $initial_seq_name) {
-      $_[3]{$_[1]} = "";
-   }
 
    # load a new chromosome
    my $buffer = "";
@@ -4806,9 +4843,9 @@ sub read_ref_chromosome {
 
       if ($line =~ /^>(\S+)/) {
          # target chromosome
-         if ($_[2] eq $1) {
+         if ($_[1] eq $1) {
             if ($flag == 1) {
-               die "\nERROR: Two chromosomes with the same name $_[2]\n\n";
+               die "\nERROR: Two chromosomes with the same name $_[1]\n\n";
             }
 
             $flag = 1;
@@ -4816,9 +4853,10 @@ sub read_ref_chromosome {
          # non-target chromosome
          else {
             if ($flag == 1) {
-               $_[3]{$_[2]} = $buffer;
+               $_[2]{$_[1]} = $buffer;
 
-               $flag = 0;
+               $flag   = 0;
+               $buffer = "";
                last;
             }
          }
@@ -4836,7 +4874,7 @@ sub read_ref_chromosome {
    # the target chromosome is the last one
    if (length($buffer) > 0) {
       if ($flag == 1) {
-         $_[3]{$_[2]} = $buffer;
+         $_[2]{$_[1]} = $buffer;
       }
       else {
          die "\nERROR: Wrong fasta file\n\n";
