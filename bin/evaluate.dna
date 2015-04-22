@@ -225,6 +225,7 @@ ARGUMENT             DESCRIPTION                   MANDATORY   DEFAULT
 -match     <number>  match gain                    N    $match_gain_default (PacBio:  $match_gain_pacbio)
 -maxdepth  <number>  max depth for reporting       N                $max_array_size
 -mmatch    <number>  mismatch penalty              N   $mismatch_penalty_default (PacBio: $mismatch_penalty_pacbio)
+-oneref              load one ref chromosome       N
 -orgfasta  <file>    single original fasta file    N
 -orgfasta1 <file>    original forward fasta file   N
 -orgfasta2 <file>    original reverse fasta file   N
@@ -291,27 +292,27 @@ my $cor_num_total_bases_percent_similarity_local   = 0;
 my $cor_num_matched_bases_percent_similarity_local = 0;
 
 my $total_substitutions_local = 0;
-my $total_insertions_local = 0;
-my $total_deletions_local = 0;
+my $total_insertions_local    = 0;
+my $total_deletions_local     = 0;
 
 my $num_deletions_5_prime_best = $neg_inf;
 my $num_deletions_3_prime_best = $neg_inf;
 
 my $num_substitutions = 0;
-my $num_insertions = 0;
-my $num_deletions = 0;
+my $num_insertions    = 0;
+my $num_deletions     = 0;
 
 my $hash_ref_index_1 = 0;
 my $hash_ref_index_2 = 0;
+
+my $num_trimmed_bases_local = 0;
+my $num_cpus                = Sys::CPU::cpu_count();
+my $seq_name_prev           = "";
 
 my $alignment_score_best;
 my $alignment_score_new_best;
 
 my $alignment_best;
-
-my $num_trimmed_bases_local = 0;
-
-my $num_cpus = Sys::CPU::cpu_count();
 
 my $corrected_read_length;
 
@@ -370,6 +371,7 @@ my $in_penalize_end_gap = 0;
 my $in_pacbio = 0;
 my $in_map_file;
 my $in_similarity = 0;
+my $in_one_ref = 0;
 
 my $help;
 my $matrix;
@@ -566,6 +568,7 @@ sub parse_args {
                     "match=i"     => \$in_match_gain,
                     "maxdepth=i"  => \$in_max_depth,
                     "mmatch=i"    => \$in_mismatch_penalty,
+                    "oneref"      => \$in_one_ref,
                     "orgfasta=s"  => \$in_org_fasta_file,
                     "orgfasta1=s" => \$in_org_fasta1_file,
                     "orgfasta2=s" => \$in_org_fasta2_file,
@@ -938,8 +941,14 @@ sub parse_args {
 
    # do depth analysis
    if (defined($in_detail_prefix)) {
+      # -detail -similarity
       if ($in_similarity) {
          die "\nERROR: -similarity cannot be used with -detail\n\n";
+      }
+
+      # -detail -oneref
+      if ($in_similarity) {
+         die "\nERROR: -oneref cannot be used with -detail\n\n";
       }
 
       # open
@@ -1100,11 +1109,12 @@ sub parse_args {
 #----------------------------------------------------------------------
 sub read_ref_sequence {
    # arguemnts
-   # 1st: reference sequence fasta
-   # 2nd: %hash_ref_seq
-   # 3rd: %hash_ref_name_to_index
-   # 4th: %hash_ref_index_to_name
-   # 5th: $hash_ref_index
+   # 1st($_[0]): reference sequence fasta
+   # 2nd($_[1]): %hash_ref_[12]
+   # 3rd($_[2]): %hash_ref_name_to_index
+   # 4th($_[3]): %hash_ref_index_to_name
+   # 5th($_[4]): $hash_ref_index
+   # 6th($_[5]): $total_ref_length[12]
 
    # open files
    my $fh_in;
@@ -1114,6 +1124,9 @@ sub read_ref_sequence {
    my $seq_name_reading      = "";
    my $seq_name_reading_tmp  = "";
    my $buffer                = "";
+
+   # initialize total length
+   $_[5] = 0;
 
    while (my $line = <$fh_in>) {
       chomp $line;
@@ -1125,8 +1138,15 @@ sub read_ref_sequence {
          # not the first sequence
          if ($seq_name_reading ne "") {
             if (length($buffer) > 0) {
-               # %hash_ref_seq
-               $_[1]{$seq_name_reading} = $buffer;
+               # if the oneref option is used
+               # chromosomes are loaded only when they are needed
+               if ($in_one_ref == 0) {
+                  # %hash_ref_[12]
+                  $_[1]{$seq_name_reading} = $buffer;
+               }
+
+               # update total length
+               $_[5] += length($buffer);
 
                # %hash_ref_name_to_index
                $_[4]++;
@@ -1153,8 +1173,15 @@ sub read_ref_sequence {
 
    if (length($buffer) > 0) {
       unless(defined($_[1]{$seq_name_reading})) {
-         # %hash_ref_seq
-         $_[1]{$seq_name_reading} = $buffer;
+         # if the oneref option is used
+         # chromosomes are loaded only when they are needed
+         if ($in_one_ref == 0) {
+            # %hash_ref_[12]
+            $_[1]{$seq_name_reading} = $buffer;
+         }
+
+         # update total length
+         $_[5] += length($buffer);
 
          # %hash_ref_name_to_index
          $_[4]++;
@@ -1191,10 +1218,10 @@ sub compare_reads {
    }
 
    # construct a hash table using the new reference
-   &read_ref_sequence($in_ref1_file, \%hash_ref_1, \%hash_ref_name_to_index_1, \%hash_ref_index_to_name_1, $hash_ref_index_1);
+   &read_ref_sequence($in_ref1_file, \%hash_ref_1, \%hash_ref_name_to_index_1, \%hash_ref_index_to_name_1, $hash_ref_index_1, $total_ref_length1);
 
    if ($two_references == 1) {
-      &read_ref_sequence($in_ref2_file, \%hash_ref_2, \%hash_ref_name_to_index_2, \%hash_ref_index_to_name_2, $hash_ref_index_2);
+      &read_ref_sequence($in_ref2_file, \%hash_ref_2, \%hash_ref_name_to_index_2, \%hash_ref_index_to_name_2, $hash_ref_index_2, $total_ref_length2);
    }
 
    my $fh_location;
@@ -3354,14 +3381,15 @@ sub compare_one_read {
    # lines that we are interested in
    # <read name> <ref 1 or 2> <ref name> <strand> <start index> <read length> <substitutions> <insertions> <deletions>
    if ($line_location =~ /^(\S+)\s+([12])\s+(\S+)\s+([\+\-])\s+([\d\-]+)\s+\d+\s+(\S+)\s+(\S+)\s+(\S+)/) {
-         $read_name    = $1;
-         $ref_1_or_2   = $2;
-         $seq_name     = $3;
-         $strand       = $4;
-      my $position     = $5; # start from 1
-         $substitution = $6;
-         $insertion    = $7;
-         $deletion     = $8;
+         $read_name     = $1;
+         $ref_1_or_2    = $2;
+         $seq_name_prev = $seq_name;
+         $seq_name      = $3;
+         $strand        = $4;
+      my $position      = $5; # start from 1
+         $substitution  = $6;
+         $insertion     = $7;
+         $deletion      = $8;
 
       #--------------------------------------------------
       # a corrected read is same as an original read
@@ -3472,11 +3500,29 @@ sub compare_one_read {
          # $positioin: 1-based
          # compare the remaining length with the required length
          if ($ref_1_or_2 eq "1") {
+            # load only one chromosome
+            if ($in_one_ref) {
+               # a current chromosome is not same as a previous one
+               if ($seq_name ne $seq_name_prev) {
+                  # read a new chromosome
+                  &read_ref_chromosome($in_ref1_file, $seq_name_prev, $seq_name, \%hash_ref_1);
+               }
+            }
+
             if ((length($hash_ref_1{$seq_name}) - $position + 1) < ($read_length - $num_insertions + $num_deletions +  $ref_seq_outer_length_right)) {
                $ref_seq_outer_length_right = (length($hash_ref_1{$seq_name}) - $position + 1) - ($read_length - $num_insertions + $num_deletions);
             }
          }
          elsif ($ref_1_or_2 eq "2") {
+            # load only one chromosome
+            if ($in_one_ref) {
+               # a current chromosome is not same as a previous one
+               if ($seq_name ne $seq_name_prev) {
+                  # read a new chromosome
+                  &read_ref_chromosome($in_ref2_file, $seq_name_prev, $seq_name, \%hash_ref_2);
+               }
+            }
+
             if ((length($hash_ref_2{$seq_name}) - $position + 1) < ($read_length - $num_insertions + $num_deletions +  $ref_seq_outer_length_right)) {
                $ref_seq_outer_length_right = (length($hash_ref_2{$seq_name}) - $position + 1) - ($read_length - $num_insertions + $num_deletions);
             }
@@ -4333,18 +4379,18 @@ sub calculate_average_read_length {
    }
 
    # get the total reference sequence length
-   $total_ref_length1 = 0;
-   $total_ref_length2 = 0;
+#   $total_ref_length1 = 0;
+#   $total_ref_length2 = 0;
 
-   foreach my $each_key (keys %hash_ref_1) {
-      $total_ref_length1 += length($hash_ref_1{$each_key});
-   }
-
-   if ($two_references == 1) {
-      foreach my $each_key (keys %hash_ref_2) {
-         $total_ref_length2 += length($hash_ref_2{$each_key});
-      }
-   }
+#   foreach my $each_key (keys %hash_ref_1) {
+#      $total_ref_length1 += length($hash_ref_1{$each_key});
+#   }
+#
+#   if ($two_references == 1) {
+#      foreach my $each_key (keys %hash_ref_2) {
+#         $total_ref_length2 += length($hash_ref_2{$each_key});
+#      }
+#   }
 
    # get ngx0 values for ref1
    $partial_sum = 0;
@@ -4546,19 +4592,18 @@ sub calculate_average_read_length {
       }
    }
 
-   # get the total reference sequence length
-   $total_ref_length1 = 0;
-   $total_ref_length2 = 0;
-
-   foreach my $each_key (keys %hash_ref_1) {
-      $total_ref_length1 += length($hash_ref_1{$each_key});
-   }
-
-   if ($two_references == 1) {
-      foreach my $each_key (keys %hash_ref_2) {
-         $total_ref_length2 += length($hash_ref_2{$each_key});
-      }
-   }
+#   $total_ref_length1 = 0;
+#   $total_ref_length2 = 0;
+#
+#   foreach my $each_key (keys %hash_ref_1) {
+#      $total_ref_length1 += length($hash_ref_1{$each_key});
+#   }
+#
+#   if ($two_references == 1) {
+#      foreach my $each_key (keys %hash_ref_2) {
+#         $total_ref_length2 += length($hash_ref_2{$each_key});
+#      }
+#   }
 
    # get ngx0 values for ref1
    $partial_sum = 0;
@@ -4726,4 +4771,73 @@ sub parse_errors {
       $org_num_total_bases_percent_similarity_local   += ($read_length + $num_deletions);
       $org_num_matched_bases_percent_similarity_local += ($read_length - $num_substitutions - $num_insertions);
    }
+}
+
+
+
+#----------------------------------------------------------------------
+# read_ref_chromosome
+#----------------------------------------------------------------------
+sub read_ref_chromosome {
+   # arguemnts
+   # 1st($_[0]): $in_ref[12]_file
+   # 2nd($_[1]): $seq_name_prev
+   # 3rd($_[2]): $seq_name
+   # 4th($_[3]): %hash_ref_[12]
+
+   # open files
+   my $fh_in;
+   open $fh_in, "$_[0]"
+      or die "\nERROR: Cannot open $_[0]\n\n";
+
+   # remove the previous chromosome
+   $_[3]{$_[1]} = "";
+
+   # load a new chromosome
+   my $buffer = "";
+   my $flag   = 0;
+
+   while (my $line = <$fh_in>) {
+      chomp $line;
+
+      if ($line =~ /^>(\S+)/) {
+         # target chromosome
+         if ($_[2] eq $1) {
+            if ($flag == 1) {
+               die "\nERROR: Two chromosomes with the same name $_[2]\n\n";
+            }
+
+            $flag = 1;
+         }
+         # non-target chromosome
+         else {
+            if ($flag == 1) {
+               $_[3]{$_[2]} = $buffer;
+
+               $flag = 0;
+               last;
+            }
+         }
+      }
+      elsif ($line =~ /^$/) {
+      }
+      else {
+         if ($flag == 1) {
+            $line = uc $line;
+            $buffer = $buffer . $line;
+         }
+      }
+   }
+
+   # the target chromosome is the last one
+   if (length($buffer) > 0) {
+      if ($flag == 1) {
+         $_[3]{$_[2]} = $buffer;
+      }
+      else {
+         die "\nERROR: Wrong fasta file\n\n";
+      }
+   }
+
+   close $fh_in;
 }
