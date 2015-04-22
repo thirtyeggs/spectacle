@@ -69,6 +69,7 @@ my $ng_cutoff                     = 500;
 my $read_length_array_size        = 50;
 my $max_threads_for_sorting       = 8;
 my $samtools                      = "${directory}/samtools/install/bin/samtools";
+my $initial_seq_name              = ">";
 
 # categorize bases
 # error-free | modified | error-free
@@ -307,7 +308,9 @@ my $hash_ref_index_2 = 0;
 
 my $num_trimmed_bases_local = 0;
 my $num_cpus                = Sys::CPU::cpu_count();
-my $seq_name_prev           = "";
+my $seq_name                = $initial_seq_name;
+
+my $seq_name_prev;
 
 my $alignment_score_best;
 my $alignment_score_new_best;
@@ -416,7 +419,6 @@ my $start_index;
 my $end_index;
 my $ref_length_taken;
 my $ref_1_or_2;
-my $seq_name;
 my $strand;
 my $read_name;
 
@@ -4791,7 +4793,9 @@ sub read_ref_chromosome {
       or die "\nERROR: Cannot open $_[0]\n\n";
 
    # remove the previous chromosome
-   $_[3]{$_[1]} = "";
+   if ($_[1] ne $initial_seq_name) {
+      $_[3]{$_[1]} = "";
+   }
 
    # load a new chromosome
    my $buffer = "";
