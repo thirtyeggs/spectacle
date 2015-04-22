@@ -3545,29 +3545,11 @@ sub compare_one_read {
          # $positioin: 1-based
          # compare the remaining length with the required length
          if ($ref_1_or_2 eq "1") {
-            # load only one chromosome
-            if ($in_one_ref) {
-               # a current chromosome is not same as a previous one
-               if ($seq_name ne $seq_name_prev) {
-                  # read a new chromosome
-                  &read_ref_chromosome($in_ref1_file, $seq_name_prev, $seq_name, \%hash_ref_1);
-               }
-            }
-
             if ((length($hash_ref_1{$seq_name}) - $position + 1) < ($read_length - $num_insertions + $num_deletions +  $ref_seq_outer_length_right)) {
                $ref_seq_outer_length_right = (length($hash_ref_1{$seq_name}) - $position + 1) - ($read_length - $num_insertions + $num_deletions);
             }
          }
          elsif ($ref_1_or_2 eq "2") {
-            # load only one chromosome
-            if ($in_one_ref) {
-               # a current chromosome is not same as a previous one
-               if ($seq_name ne $seq_name_prev) {
-                  # read a new chromosome
-                  &read_ref_chromosome($in_ref2_file, $seq_name_prev, $seq_name, \%hash_ref_2);
-               }
-            }
-
             if ((length($hash_ref_2{$seq_name}) - $position + 1) < ($read_length - $num_insertions + $num_deletions +  $ref_seq_outer_length_right)) {
                $ref_seq_outer_length_right = (length($hash_ref_2{$seq_name}) - $position + 1) - ($read_length - $num_insertions + $num_deletions);
             }
@@ -4853,6 +4835,8 @@ sub read_ref_chromosome {
          # non-target chromosome
          else {
             if ($flag == 1) {
+# DEBUG
+print "a: $_[1]\n";
                $_[2]{$_[1]} = $buffer;
 
                $flag   = 0;
