@@ -4845,8 +4845,6 @@ sub read_ref_chromosome {
          # non-target chromosome
          else {
             if ($flag == 1) {
-# DEBUG
-print "a: $_[1]\n";
                $_[2]{$_[1]} = $buffer;
 
                $flag   = 0;
