@@ -15,7 +15,7 @@ if ($@) {
 
 # use the library for version control
 my $directory;
-BEGIN {$directory = dirname $0;} 
+BEGIN {$directory = dirname $0;}
 use lib "${directory}/../lib";
 
 if (!-e "${directory}/../lib/version.pm") {
@@ -170,6 +170,9 @@ sub read_heterozygosities {
                if ($alternatives !~ /[ACGT][ACGT]/) {
                   if (($filter eq ".") && ($filter eq "PASS")) {
                      $alternatives =~ s/,//g;
+
+                     # position: 1-based
+                     # alternatives: positive-strand-based
                      $hash_heterozygosity{$position} = $alternatives;
                   }
                }
@@ -196,28 +199,74 @@ sub remove_heterozygosities {
    open FH_OUT, ">$out_location_file"
       or die "\nERROR: Cannot open $out_location_file\n\n";
 
+   my $position;
+   my $position_converted;
+   my $ref_base;
+   my $err_base;
+   my $read_name;
+   my $ref_number;
+   my $chromosome;
+   my $strand;
+   my $start;
+   my $read_length;
+   my $substitution;
+   my $remaining;
+   my $substitution_new;
+
    while (my $line_location = <FH_LOCATION>) {
       # <read name> <ref 1 or 2> <ref name> <strand> <start index> <read length> <substitutions> <insertions> <deletions>
       if ($line_location =~ /^(\S+)\s+([12])\s+(\S+)\s+([\+\-])\s+([\d\-]+)\s+(\d+)\s+(\S+)\s+(\S+\s+\S+)/) {
-         my $read_name    = $1;
-         my $ref_number   = $2;
-         my $chromosome   = $3;
-         my $strand       = $4;
-         my $start        = $5;
-         my $read_length  = $6;
-         my $substitution = $7;
-         my $remaining    = $8;
+         $read_name    = $1;
+         $ref_number   = $2;
+         $chromosome   = $3;
+         $strand       = $4;
+         $start        = $5;
+         $read_length  = $6;
+         $substitution = $7;
+         $remaining    = $8;
 
          if ($ref_number == 2) {
             die "\nERROR: Simulated reads should not be used\n\n";
          }
 
+         # chromosome not matched
          if ($chromosome eq $in_chromosome) {
+            # no substitution error
+            if ($substitution eq "-") {
+               print FH_OUT $line_location;
+            }
+            else {
+               $substitution_new = "";
 
+               # iterate substitution errors
+               while ($substitution =~ /(\d+):([ACGT])\->([ACGT]);/g) {
+                  $position = $1;
+                  $ref_base = $2;
+                  $err_base = $3;
 
+                  if ($strand eq "+") {
+                     $position_converted = $start + $position - 1;
+                  }
+                  else {
+                     $position_converted = $start + $read_length - $position;
 
+                     # always positive strand
+                     $err_base = &reverse_complement($err_base);
+                  }
 
+                  if (defined($hash_heterozygosity{$position_converted})) {
+                     if ($hash_heterozygosity{$position_converted} =~ /$err_base/) {
+                     }
+                  }
+               }
 
+               # all the substitutions are removed
+               if ($substitution_new eq "") {
+                  $substitution_new = "-";
+               }
+
+               print FH_OUT "$read_name $ref_number $chromosome $strand $start $read_length $substitution_new $remaining\n";
+            }
          }
          else {
             print FH_OUT $line_location;
@@ -232,4 +281,27 @@ sub remove_heterozygosities {
    close FH_OUT;
 
    print "     Removing heterozygosities: done\n\n";
+}
+
+
+
+#---------------------------------------------------------------------
+# reverse_complement
+#---------------------------------------------------------------------
+sub reverse_complement {
+   if ($_[0] eq "A") {
+      return "T";
+   }
+   elsif ($_[0] eq "C") {
+      return "G";
+   }
+   elsif ($_[0] eq "G") {
+      return "C";
+   }
+   elsif ($_[0] eq "T") {
+      return "A";
+   }
+   else {
+      die "\nERROR: Illegal character $_[0]\n\n";
+   }
 }
