@@ -156,7 +156,7 @@ sub read_heterozygosities {
    open FH_VCF, "$in_vcf_file"
       or die "\nERROR: Cannot open $in_vcf_file\n\n";
 
-   while (my $line_location = <FH_LOCATION>) {
+   while (my $line_location = <FH_VCF>) {
       # <chrom> <pos> <id> <ref> <alt> <qual> <filter> ...
       if ($line_location !~ /^#/) {
          if ($line_location =~ /^(\S+)\s+(\S+)\s+\S+\s+([ACGT])\s+(\S+)\s+\S+\s+(\S+)/) {
@@ -272,8 +272,9 @@ sub remove_heterozygosities {
             print FH_OUT $line_location;
          }
       }
+      # N/A line
       else {
-         die "\nERROR: Wrong location line $line_location\n\n";
+         print FH_OUT $line_location;
       }
    }
 
