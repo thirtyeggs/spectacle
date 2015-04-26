@@ -37,7 +37,10 @@ my $in_vcf_file;
 my $in_prefix;
 my $out_location_file;
 
-my $out_log_file;
+my $total_substitutions         = 0;
+my $total_substitutions_removed = 0;
+
+my $out_remove_list_file;
 my $help;
 
 my %hash_heterozygosity;
@@ -139,7 +142,7 @@ sub parse_arguments {
       die "\nERROR: A output prefix should be specified\n\n";
    }
 
-   $out_log_file = $in_prefix . ".log";
+   $out_remove_list_file = $in_prefix . ".removed";
 
    # vcf file
    if (!defined($in_vcf_file)) {
@@ -180,7 +183,7 @@ sub read_heterozygosities {
 
             if ($chromosome eq $in_chromosome) {
                if ($alternatives !~ /[ACGT][ACGT]/) {
-                  if (($filter eq ".") && ($filter eq "PASS")) {
+                  if (($filter eq ".") || ($filter eq "PASS")) {
                      $alternatives =~ s/,//g;
 
                      # position: 1-based
@@ -210,8 +213,8 @@ sub remove_heterozygosities {
       or die "\nERROR: Cannot open $in_location_file\n\n";
    open FH_OUT, ">$out_location_file"
       or die "\nERROR: Cannot open $out_location_file\n\n";
-   open FH_LOG, ">$out_log_file"
-      or die "\nERROR: Cannot open $out_log_file\n\n";
+   open FH_REMOVE, ">$out_remove_list_file"
+      or die "\nERROR: Cannot open $out_remove_list_file\n\n";
 
    my $position;
    my $position_converted;
@@ -275,21 +278,25 @@ sub remove_heterozygosities {
                      # this bases exists in the hash
                      if ($hash_heterozygosity{$position_converted} =~ /$err_base/) {
                         if ($flag_written == 0) {
-                           print FH_LOG "\n$read_name ";
-                           print FH_LOG "$position:$ref_base->$err_base;";
-
+                           print FH_REMOVE "$read_name ";
                            $flag_written = 1;
                         }
-                        else {
-                           $substitution_new = $substitution_new . "${position}:${ref_base}\->${err_base};";
-                        }
+
+                        print FH_REMOVE "$position:$ref_base->$err_base;";
                      }
                      else {
                         $substitution_new = $substitution_new . "${position}:${ref_base}\->${err_base};";
                      }
                   }
                   else {
+                     $substitution_new = $substitution_new . "${position}:${ref_base}\->${err_base};";
                   }
+
+                  $total_substitutions++;
+               }
+
+               if ($flag_written == 1) {
+                  print FH_REMOVE "\n";
                }
 
                # all the substitutions are removed
@@ -312,9 +319,12 @@ sub remove_heterozygosities {
 
    close FH_LOCATION;
    close FH_OUT;
-   close FH_LOG;
+   close FH_REMOVE;
 
-   print "     Removing heterozygosities: done\n\n";
+   printf "     Total number of substitutions in the target chromosome: %12d\n", $total_substitutions;
+   printf "     Total number of removed substitutions                 : %12d\n", $total_substitutions_removed;
+
+   print  "     Removing heterozygosities: done\n";
 }
 
 
