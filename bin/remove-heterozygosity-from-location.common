@@ -34,8 +34,10 @@ my $version      = $version::version;
 my $in_chromosome;
 my $in_location_file;
 my $in_vcf_file;
+my $in_prefix;
 my $out_location_file;
 
+my $out_log_file;
 my $help;
 
 my %hash_heterozygosity;
@@ -58,8 +60,9 @@ ARGUMENT          DESCRIPTION                   MANDATORY      DEFAULT
 -chr      <str>   chromosome name               Y
 -h                print help                    N
 -location <file>  error location file           Y
--vcf      <file>  input vcf file                Y
+-prefix <prefix>  output prefix                 Y
 -out      <file>  output location file          Y
+-vcf      <file>  input vcf file                Y
 ----------------------------------------------------------------------
 \n";
 
@@ -111,6 +114,7 @@ sub parse_arguments {
                     "chr=s"      => \$in_chromosome,
                     "location=s" => \$in_location_file,
                     "out=s"      => \$out_location_file,
+                    "prefix=s"      => \$in_prefix,
                     "vcf=s"      => \$in_vcf_file,
                    )
        or $help) {
@@ -129,6 +133,13 @@ sub parse_arguments {
    elsif (!-e $in_location_file) {
       die "\nERROR: Cannot open $in_location_file\n\n";
    }
+
+   # output prefix
+   if (!defined($in_prefix)) {
+      die "\nERROR: A output prefix should be specified\n\n";
+   }
+
+   $out_log_file = $in_prefix . ".log";
 
    # vcf file
    if (!defined($in_vcf_file)) {
@@ -199,6 +210,8 @@ sub remove_heterozygosities {
       or die "\nERROR: Cannot open $in_location_file\n\n";
    open FH_OUT, ">$out_location_file"
       or die "\nERROR: Cannot open $out_location_file\n\n";
+   open FH_LOG, ">$out_log_file"
+      or die "\nERROR: Cannot open $out_log_file\n\n";
 
    my $position;
    my $position_converted;
@@ -213,6 +226,7 @@ sub remove_heterozygosities {
    my $substitution;
    my $remaining;
    my $substitution_new;
+   my $flag_written;
 
    while (my $line_location = <FH_LOCATION>) {
       # <read name> <ref 1 or 2> <ref name> <strand> <start index> <read length> <substitutions> <insertions> <deletions>
@@ -238,6 +252,7 @@ sub remove_heterozygosities {
             }
             else {
                $substitution_new = "";
+               $flag_written     = 0;
 
                # iterate substitution errors
                while ($substitution =~ /(\d+):([ACGT])\->([ACGT]);/g) {
@@ -255,9 +270,25 @@ sub remove_heterozygosities {
                      $err_base = &reverse_complement($err_base);
                   }
 
+                  # this position exists in the heterozygosity hash
                   if (defined($hash_heterozygosity{$position_converted})) {
+                     # this bases exists in the hash
                      if ($hash_heterozygosity{$position_converted} =~ /$err_base/) {
+                        if ($flag_written == 0) {
+                           print FH_LOG "\n$read_name ";
+                           print FH_LOG "$position:$ref_base->$err_base;";
+
+                           $flag_written = 1;
+                        }
+                        else {
+                           $substitution_new = $substitution_new . "${position}:${ref_base}\->${err_base};";
+                        }
                      }
+                     else {
+                        $substitution_new = $substitution_new . "${position}:${ref_base}\->${err_base};";
+                     }
+                  }
+                  else {
                   }
                }
 
@@ -281,6 +312,7 @@ sub remove_heterozygosities {
 
    close FH_LOCATION;
    close FH_OUT;
+   close FH_LOG;
 
    print "     Removing heterozygosities: done\n\n";
 }
