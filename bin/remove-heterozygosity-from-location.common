@@ -220,6 +220,7 @@ sub remove_heterozygosities {
    my $position_converted;
    my $ref_base;
    my $err_base;
+   my $err_base_pos_strand;
    my $read_name;
    my $ref_number;
    my $chromosome;
@@ -264,19 +265,20 @@ sub remove_heterozygosities {
                   $err_base = $3;
 
                   if ($strand eq "+") {
-                     $position_converted = $start + $position - 1;
+                     $position_converted  = $start + $position - 1;
+                     $err_base_pos_strand = $err_base;
                   }
                   else {
                      $position_converted = $start + $read_length - $position;
 
                      # always positive strand
-                     $err_base = &reverse_complement($err_base);
+                     $err_base_pos_strand = &reverse_complement($err_base);
                   }
 
                   # this position exists in the heterozygosity hash
                   if (defined($hash_heterozygosity{$position_converted})) {
                      # this bases exists in the hash
-                     if ($hash_heterozygosity{$position_converted} =~ /$err_base/) {
+                     if ($hash_heterozygosity{$position_converted} =~ /$err_base_pos_strand/) {
                         if ($flag_written == 0) {
                            print FH_REMOVE "$read_name ";
                            $flag_written = 1;
