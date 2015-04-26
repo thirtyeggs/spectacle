@@ -283,6 +283,8 @@ sub remove_heterozygosities {
                         }
 
                         print FH_REMOVE "$position:$ref_base->$err_base;";
+
+                        $total_substitutions_removed++;
                      }
                      else {
                         $substitution_new = $substitution_new . "${position}:${ref_base}\->${err_base};";
@@ -312,8 +314,11 @@ sub remove_heterozygosities {
          }
       }
       # N/A line
-      else {
+      elsif ($line_location =~ /^(\S+)\s+N\/A$/) {
          print FH_OUT $line_location;
+      }
+      else {
+         die "\nERROR: $line_location\n";
       }
    }
 
