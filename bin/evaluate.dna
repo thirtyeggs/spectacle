@@ -3252,6 +3252,54 @@ sub compare_reads {
             printf "          F-score             : %12s\n", "N/A";
          }
 
+         #----------------------------------------------------------------------
+         # overall (substitution + insertion + deletion)
+         #----------------------------------------------------------------------
+         print  "\n";
+         print  "     Overall (S + I + D):\n";
+         printf "          YYN                 : %12d\n", $num_yyns_substitution + $num_yyns_insertion + $num_yyns_deletion;
+         printf "          NYY                 : %12d\n", $num_nyys_substitution + $num_nyys_substitution_trim + $num_nyys_insertion + $num_nyys_insertion_trim + $num_nyys_deletion + $num_nyys_deletion_trim;
+         printf "               NYY TRIM       : %12d\n", $num_nyys_substitution_trim + $num_nyys_insertion_trim + $num_nyys_deletion_trim;
+         printf "          NYN                 : %12d\n", $num_nyns_substitution + $num_nyns_insertion + $num_nyns_deletion;
+         printf "          NNN                 : %12d\n", $num_nnns_substitution + $num_nnns_insertion + $num_nnns_deletion;
+         printf "          Not evaluated       : %12d\n", $num_not_evaluated_substitution + $num_not_evaluated_insertion + $num_not_evaluated_deletion;
+
+         # P: erroneous bases in original reads
+         # sensitivity (recall):        TP / P =        TP / (TP + FN) =               NYY / (NYY + (NYN + NNN))
+         # gain                : (TP - FP) / P = (TP - FP) / (TP + FN) = (NYY - YYN - NYN) / (NYY + (NYN + NNN))
+         if ((($num_nyys_substitution + $num_nyys_substitution_trim + $num_nyys_insertion + $num_nyys_insertion_trim + $num_nyys_deletion + $num_nyys_deletion_trim) + ($num_nyns_substitution + $num_nnns_substitution + $num_nyns_insertion + $num_nnns_insertion + $num_nyns_deletion + $num_nnns_deletion)) != 0) {
+            printf "          Sensitivity (recall): %12.4f\n",
+            ($num_nyys_substitution + $num_nyys_substitution_trim + $num_nyys_insertion + $num_nyys_insertion_trim + $num_nyys_deletion + $num_nyys_deletion_trim) /
+            (($num_nyys_substitution + $num_nyys_substitution_trim + $num_nyys_insertion + $num_nyys_insertion_trim +$num_nyys_deletion + $num_nyys_deletion_trim) + ($num_nyns_substitution + $num_nnns_substitution + $num_nyns_insertion + $num_nnns_insertion + $num_nyns_deletion + $num_nnns_deletion));
+            printf "          Gain                : %12.4f\n",
+            (($num_nyys_substitution + $num_nyys_substitution_trim + $num_nyys_insertion + $num_nyys_insertion_trim + $num_nyys_deletion + $num_nyys_deletion_trim) - ($num_yyns_substitution + $num_nyns_substitution + $num_yyns_insertion + $num_nyns_insertion + $num_yyns_deletion + $num_nyns_deletion)) /
+            (($num_nyys_substitution + $num_nyys_substitution_trim + $num_nyys_insertion + $num_nyys_insertion_trim + $num_nyys_deletion + $num_nyys_deletion_trim) + ($num_nyns_substitution + $num_nnns_substitution + $num_nyns_insertion + $num_nnns_insertion + $num_nyns_deletion + $num_nnns_deletion));
+         }
+         else {
+            printf "          Sensitivity (recall): %12s\n", "N/A";
+            printf "          Gain                : %12s\n", "N/A";
+         }
+
+         # precision: TP / (TP + FP)
+         if ((($num_nyys_substitution + $num_nyys_substitution_trim + $num_nyys_insertion + $num_nyys_insertion_trim + $num_nyys_deletion + $num_nyys_deletion_trim) + ($num_yyns_substitution + $num_nyns_substitution + $num_yyns_insertion + $num_nyns_insertion + $num_yyns_deletion + $num_nyns_deletion)) != 0) {
+            printf "          Precision           : %12.4f\n",
+            ($num_nyys_substitution + $num_nyys_substitution_trim + $num_nyys_insertion + $num_nyys_insertion_trim + $num_nyys_deletion + $num_nyys_deletion_trim) /
+            (($num_nyys_substitution + $num_nyys_substitution_trim + $num_nyys_insertion + $num_nyys_insertion_trim + $num_nyys_deletion + $num_nyys_deletion_trim) + ($num_yyns_substitution + $num_nyns_substitution + $num_yyns_insertion + $num_nyns_insertion + $num_yyns_deletion + $num_nyns_deletion));
+         }
+         else {
+            printf "          Precision           : %12s\n", "N/A";
+         }
+
+         # f-score: 2TP / (2TP + FP + FN)
+         if ((2 * ($num_nyys_substitution + $num_nyys_substitution_trim + $num_nyys_insertion + $num_nyys_insertion_trim + $num_nyys_deletion + $num_nyys_deletion_trim) + ($num_yyns_substitution + $num_nyns_substitution + $num_yyns_insertion + $num_nyns_insertion + $num_yyns_deletion + $num_nyns_deletion) + ($num_nyns_substitution + $num_nnns_substitution + $num_nyns_insertion + $num_nnns_insertion + $num_nyns_deletion + $num_nnns_deletion)) != 0) {
+            printf "          F-score             : %12.4f\n",
+            2 * ($num_nyys_substitution + $num_nyys_substitution_trim + $num_nyys_insertion + $num_nyys_insertion_trim + $num_nyys_deletion + $num_nyys_deletion_trim) /
+            (2 * ($num_nyys_substitution + $num_nyys_substitution_trim + $num_nyys_insertion + $num_nyys_insertion_trim + $num_nyys_deletion + $num_nyys_deletion_trim) + ($num_yyns_substitution + $num_nyns_substitution + $num_yyns_insertion + $num_nyns_insertion + $num_yyns_deletion + $num_nyns_deletion) + ($num_nyns_substitution + $num_nnns_substitution + $num_nyns_insertion + $num_nnns_insertion + $num_nyns_deletion + $num_nnns_deletion));
+         }
+         else {
+            printf "          F-score             : %12s\n", "N/A";
+         }
+
          print "\n";
 
          printf "     Trimmed bases            : %12d\n", $num_trimmed_bases;
