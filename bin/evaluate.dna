@@ -1627,10 +1627,13 @@ sub compare_reads {
             }
          }
          # read length is too long: skip this
+         # or N/A in the location file
          else {
             # skip unnecessary reads
             $line_tmp = <$fh_org_read1> ;
             $line_tmp = <$fh_org_read1>;
+
+            $trim_length = length($line_tmp);
 
             if ($org_fastq_input == 1) {
                $line_tmp = <$fh_org_read1>;
@@ -1641,6 +1644,14 @@ sub compare_reads {
             for (my $it_map = 0; $it_map < $occurrence_map; $it_map++) {
                $line_tmp = <$fh_cor_read1>;
                $line_tmp = <$fh_cor_read1>;
+
+               $trim_length -= length($line_tmp);
+
+               if ($trim_length > 0) {
+                  if (!defined($in_map_file)) {
+                     $num_trimmed_bases_local += $trim_length;
+                  }
+               }
 
                if ($cor_fastq_input == 1) {
                   $line_tmp = <$fh_cor_read1>;
@@ -1863,10 +1874,13 @@ sub compare_reads {
                }
             }
             # read length is too long: skip this
+            # or N/A in the location file
             else {
                # read header and sequence lines of original reads
                $line_tmp = <$fh_org_read2>;
                $line_tmp = <$fh_org_read2>;
+
+               $trim_length = length($line_tmp);
 
                if ($org_fastq_input == 1) {
                   $line_tmp = <$fh_org_read2>;
@@ -1878,6 +1892,14 @@ sub compare_reads {
                   # read header and sequence lines of corrected reads
                   $line_tmp = <$fh_cor_read2>;
                   $line_tmp = <$fh_cor_read2>;
+
+                  $trim_length -= length($line_tmp);
+
+                  if ($trim_length > 0) {
+                     if (!defined($in_map_file)) {
+                        $num_trimmed_bases_local += $trim_length;
+                     }
+                  }
 
                   if ($cor_fastq_input == 1) {
                      $line_tmp = <$fh_cor_read2>;
@@ -3507,9 +3529,13 @@ sub compare_reads {
             printf "          F-score             : %12s\n", "N/A";
          }
 
-         print "\n";
+         # if reads are split into multiple micro reads
+         # countinig trimmed bases is meaningless
+         if (!defined($in_map_file)) {
+            print "\n";
 
-         printf "     Trimmed bases            : %12d\n", $num_trimmed_bases;
+            printf "     Trimmed bases            : %12d\n", $num_trimmed_bases;
+         }
 
          #
          # position
