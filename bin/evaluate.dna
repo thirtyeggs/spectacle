@@ -1994,17 +1994,141 @@ sub compare_reads {
    # in the core with rank 0
    if ($rank == 0) {
       # rewind file handlers
-      seek($fh_location,  0, 0);
-      seek($fh_org_read1, 0, 0);
-      seek($fh_cor_read1, 0, 0);
 
+      # location file
+      seek($fh_location,  0, 0);
+
+      # map file
       if (defined($fh_map)) {
          seek($fh_map, 0, 0);
       }
 
+      # oriiginal reads
       if ($is_paired) {
-         seek($fh_org_read2, 0, 0);
-         seek($fh_cor_read2, 0, 0);
+         if ($org_fastq_input == 1) {
+            if ($in_org_fastq1_file =~ /\.gz$/) {
+               close $fh_org_read1;
+               $fh_org_read1 = IO::Uncompress::Gunzip->new($in_org_fastq1_file)
+                  or die "\nERROR: Cannot open $in_org_fastq1_file\n\n"
+            }
+            else {
+               seek($fh_org_read1, 0, 0);
+            }
+   
+            if ($in_org_fastq2_file =~ /\.gz$/) {
+               close $fh_org_read2;
+               $fh_org_read2 = IO::Uncompress::Gunzip->new($in_org_fastq2_file)
+                  or die "\nERROR: Cannot open $in_org_fastq2_file\n\n"
+            }
+            else {
+               seek($fh_org_read2, 0, 0);
+            }
+         }
+         else {
+            if ($in_org_fasta1_file =~ /\.gz$/) {
+               close $fh_org_read1;
+               $fh_org_read1 = IO::Uncompress::Gunzip->new($in_org_fasta1_file)
+                  or die "\nERROR: Cannot open $in_org_fasta1_file\n\n"
+            }
+            else {
+               seek($fh_org_read1, 0, 0);
+            }
+   
+            if ($in_org_fasta2_file =~ /\.gz$/) {
+               close $fh_org_read2;
+               $fh_org_read2 = IO::Uncompress::Gunzip->new($in_org_fasta2_file)
+                  or die "\nERROR: Cannot open $in_org_fasta2_file\n\n"
+            }
+            else {
+               seek($fh_org_read2, 0, 0);
+            }
+         }
+      }
+      else {
+         if ($org_fastq_input == 1) {
+            if ($in_org_fastq_file =~ /\.gz$/) {
+               close $fh_org_read1;
+               $fh_org_read1 = IO::Uncompress::Gunzip->new($in_org_fastq_file)
+                  or die "\nERROR: Cannot open $in_org_fastq_file\n\n"
+            }
+            else {
+               seek($fh_org_read1, 0, 0);
+            }
+         }
+         else {
+            if ($in_org_fasta_file =~ /\.gz$/) {
+               close $fh_org_read1;
+               $fh_org_read1 = IO::Uncompress::Gunzip->new($in_org_fasta_file)
+                  or die "\nERROR: Cannot open $in_org_fasta_file\n\n"
+            }
+            else {
+               seek($fh_org_read1, 0, 0);
+            }
+         }
+      }
+
+      # corrected reads
+      if ($is_paired) {
+         if ($cor_fastq_input == 1) {
+            if ($in_cor_fastq1_file =~ /\.gz$/) {
+               close $fh_cor_read1;
+               $fh_cor_read1 = IO::Uncompress::Gunzip->new($in_cor_fastq1_file)
+                  or die "\nERROR: Cannot open $in_cor_fastq1_file\n\n"
+            }
+            else {
+               seek($fh_cor_read1, 0, 0);
+            }
+   
+            if ($in_cor_fastq2_file =~ /\.gz$/) {
+               close $fh_cor_read2;
+               $fh_cor_read2 = IO::Uncompress::Gunzip->new($in_cor_fastq2_file)
+                  or die "\nERROR: Cannot open $in_cor_fastq2_file\n\n"
+            }
+            else {
+               seek($fh_cor_read2, 0, 0);
+            }
+         }
+         else {
+            if ($in_cor_fasta1_file =~ /\.gz$/) {
+               close $fh_cor_read1;
+               $fh_cor_read1 = IO::Uncompress::Gunzip->new($in_cor_fasta1_file)
+                  or die "\nERROR: Cannot open $in_cor_fasta1_file\n\n"
+            }
+            else {
+               seek($fh_cor_read1, 0, 0);
+            }
+   
+            if ($in_cor_fasta2_file =~ /\.gz$/) {
+               close $fh_cor_read2;
+               $fh_cor_read2 = IO::Uncompress::Gunzip->new($in_cor_fasta2_file)
+                  or die "\nERROR: Cannot open $in_cor_fasta2_file\n\n"
+            }
+            else {
+               seek($fh_cor_read2, 0, 0);
+            }
+         }
+      }
+      else {
+         if ($cor_fastq_input == 1) {
+            if ($in_cor_fastq_file =~ /\.gz$/) {
+               close $fh_cor_read1;
+               $fh_cor_read1 = IO::Uncompress::Gunzip->new($in_cor_fastq_file)
+                  or die "\nERROR: Cannot open $in_cor_fastq_file\n\n"
+            }
+            else {
+               seek($fh_cor_read1, 0, 0);
+            }
+         }
+         else {
+            if ($in_cor_fasta_file =~ /\.gz$/) {
+               close $fh_cor_read1;
+               $fh_cor_read1 = IO::Uncompress::Gunzip->new($in_cor_fasta_file)
+                  or die "\nERROR: Cannot open $in_cor_fasta_file\n\n"
+            }
+            else {
+               seek($fh_cor_read1, 0, 0);
+            }
+         }
       }
 
       # process each location line
