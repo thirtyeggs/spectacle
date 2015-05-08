@@ -1,9 +1,0 @@
-#!/bin/bash
-
-install_dir=${PWD}/install
-
-cd ncurses-5.9
-
-./configure --prefix=$install_dir
-make
-make prefix=${install_dir} install
