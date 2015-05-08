@@ -84,7 +84,7 @@ $(ZLIB):
 evaluate: $(SRC_DIR)/evaluate.o $(SRC_DIR)/evaluate-wrap.o
 	$(CC) -O3 -std=c++11 `perl -MConfig -e 'print $$Config{lddlflags}'` -o $(LIB_DIR)/evaluate.so $?
 	chmod 644 $(LIB_DIR)/evaluate.so
-	cd ncurse; ./compile; cd ..
+	cd ncurses; ./compile; cd ..
 	cd samtools; ./compile
 
 clean:
