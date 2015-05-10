@@ -1,6 +1,6 @@
 CC=g++
-CFLAGS=-Wall -O3 -std=c++11
-LDFLAGS=-std=c++11 ./boost/libboost_iostreams.a ./zlib/install/lib/libz.a
+CFLAGS=-Wall -O3 -std=c++11 -I ./boost/include
+LDFLAGS=-std=c++11 ./boost/lib/libboost_iostreams.a ./zlib/install/lib/libz.a
 SRC_DIR=src
 LIB_DIR=lib
 BIN_DIR=bin
