@@ -293,10 +293,7 @@ sub write_reads {
          }   
 
          # extract a sequence
-         my $out = extract_sequence($genome, $seq_name, $position, $strand, $num_insertions, $num_deletions, $read_length, $read_name);
-
-         # write a read
-         print FH_OUT1 "$out";
+         my $out1 = extract_sequence($genome, $seq_name, $position, $strand, $num_insertions, $num_deletions, $read_length, $read_name);
 
          #
          # reverse read
@@ -335,10 +332,11 @@ sub write_reads {
             }   
 
             # extract a sequence
-            $out = extract_sequence($genome, $seq_name, $position, $strand, $num_insertions, $num_deletions, $read_length, $read_name);
+            my $out2 = extract_sequence($genome, $seq_name, $position, $strand, $num_insertions, $num_deletions, $read_length, $read_name);
 
             # write a read
-            print FH_OUT2 "$out";
+            print FH_OUT1 "$out1";
+            print FH_OUT2 "$out2";
 
             $num_lines++;
 
@@ -346,9 +344,16 @@ sub write_reads {
                printf "     %12d lines processed\n", $num_lines;
             }
          }
-         else {
+         # first: normal line; second: N/A
+         # do nothing
+         elsif ($line_location !~ /^(\S+)\s+N\/A$/) {
             die "\nERROR: $line_location\n";
          }
+      }
+      # first line: N/A
+      elsif ($line_location =~ /^(\S+)\s+N\/A$/) {
+         # skep the next line
+         $line_location = <FH_LOCATION>;
       }
       else {
          die "\nERROR: $line_location\n";
