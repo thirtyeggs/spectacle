@@ -3685,10 +3685,10 @@ sub compare_one_read {
             if ($ref_1_or_2 eq "1") {
                # remove the previous chromosome
                if ($ref_1_or_2_prev eq "1") {
-                  $hash_ref_1{$seq_name_prev} = "";
+                  delete $hash_ref_1{$seq_name_prev};
                }
                else {
-                  $hash_ref_2{$seq_name_prev} = "";
+                  delete $hash_ref_2{$seq_name_prev};
                }
 
                # load only one chromosome
@@ -3697,10 +3697,10 @@ sub compare_one_read {
             elsif ($ref_1_or_2 eq "2") {
                # remove the previous chromosome
                if ($ref_1_or_2_prev eq "1") {
-                  $hash_ref_1{$seq_name_prev} = "";
+                  delete $hash_ref_1{$seq_name_prev};
                }
                else {
-                  $hash_ref_2{$seq_name_prev} = "";
+                  delete $hash_ref_2{$seq_name_prev};
                }
 
                # load only one chromosome
