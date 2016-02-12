@@ -50,7 +50,7 @@ my $num_uncoverted_bases_ref      = 0;
 my $num_total_bases_ref           = 0;
 my $num_total_bases_aligned_reads = 0;
 my $max_threads_for_sorting       = 8;
-my $sambamba                      = "${directory}/sambamba/sambamba_v0.5.4";
+my $sambamba                      = "${directory}/../sambamba/sambamba_v0.5.4";
 
 # input arguments
 my $location_file;
